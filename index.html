@@ -41,10 +41,43 @@
         header {
             background-color: var(--primary);
             color: white;
-            padding: 0.8rem;
-            text-align: center;
+            padding: 0.4rem 0.6rem;
             border-radius: 8px;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1.2fr;
+            gap: 6px;
+            align-items: center;
+            font-size: 13px;
+        }
+
+        .header-team {
+            text-align: left;
+        }
+
+        .header-team:nth-child(2) {
+            text-align: center;
+        }
+
+        .header-status {
+            text-align: right;
+            font-weight: 600;
+        }
+
+        .header-label {
+            font-size: 11px;
+            opacity: 0.85;
+        }
+
+        .header-score {
+            font-size: 14px;
+            font-weight: bold;
         }
         
         .app-section {
@@ -181,10 +214,10 @@
         }
         
         .ball-btn {
-            padding: 14px 8px;
-            font-size: 16px;
+            padding: 10px 6px;
+            font-size: 14px;
             font-weight: bold;
-            min-height: 60px;
+            min-height: 48px;
         }
         
         .overs-display {
@@ -204,27 +237,29 @@
             transition: all 0.3s ease;
         }
         
-        .batsmen {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 12px;
-            margin-bottom: 15px;
+        .batsmen-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+            font-size: 14px;
         }
-        
-        @media (min-width: 600px) {
-            .batsmen {
-                grid-template-columns: 1fr 1fr;
-            }
+
+        .batsmen-table th,
+        .batsmen-table td {
+            padding: 8px 6px;
+            border-bottom: 1px solid #e0e0e0;
         }
-        
-        .batsman-card {
+
+        .batsmen-table th {
             background-color: var(--light);
-            padding: 12px;
-            border-radius: 8px;
+            text-align: left;
         }
-        
-        .active {
-            border-left: 4px solid var(--success);
+
+        .batsmen-actions {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-bottom: 12px;
         }
         
         .innings-tabs {
@@ -458,6 +493,27 @@
         .summary-buttons button {
             flex: 1;
         }
+
+        .toast {
+            position: fixed;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 2000;
+        }
+
+        .toast.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
         
         @media (max-width: 480px) {
             .container {
@@ -465,8 +521,8 @@
             }
             
             header {
-                padding: 0.6rem;
-                margin-bottom: 10px;
+                padding: 0.35rem 0.5rem;
+                margin-bottom: 8px;
             }
             
             .app-section {
@@ -493,8 +549,8 @@
             }
             
             .ball-btn {
-                min-height: 50px;
-                font-size: 15px;
+                min-height: 44px;
+                font-size: 14px;
             }
             
             input, select {
@@ -523,9 +579,21 @@
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>Cricket Match Tracker</h1>
-            <p>Quick setup and scoring for recreational matches</p>
+        <header id="matchHeader">
+            <div class="header-grid">
+                <div class="header-team">
+                    <div class="header-label" id="headerTeam1Name">Team 1</div>
+                    <div class="header-score" id="headerTeam1Score">0/0 (0.0)</div>
+                </div>
+                <div class="header-team">
+                    <div class="header-label" id="headerTeam2Name">Team 2</div>
+                    <div class="header-score" id="headerTeam2Score">0/0 (0.0)</div>
+                </div>
+                <div class="header-status">
+                    <div class="header-label">Match Status</div>
+                    <div class="header-score" id="headerMatchStatus">Not started</div>
+                </div>
+            </div>
         </header>
         
         <section id="setupView" class="app-section">
@@ -582,35 +650,32 @@
                 <button id="changeBowler" class="info">Change Bowler</button>
             </div>
             
-            <div class="innings-tabs">
-                <button class="innings-tab active" data-innings="1">Innings 1</button>
-                <button class="innings-tab" data-innings="2">Innings 2</button>
-            </div>
-            
-            <h3>Ball-by-Ball Commentary</h3>
-            <div class="ball-by-ball" id="ballCommentary">
-                <div class="innings-commentary active" id="innings1Commentary"></div>
-                <div class="innings-commentary" id="innings2Commentary"></div>
-            </div>
-            
-            <div class="batsmen">
-                <div class="batsman-card active">
-                    <h3>Striker: <span id="strikerName">Player 1</span></h3>
-                    <div>Runs: <span id="strikerRuns">0</span></div>
-                    <div>Balls: <span id="strikerBalls">0</span></div>
-                    <div>4s/6s: <span id="strikerFours">0</span>/<span id="strikerSixes">0</span></div>
-                    <div>Strike Rate: <span id="strikerSR">0.00</span></div>
-                    <button class="change-batsman warning" data-position="striker">Change Batsman</button>
-                </div>
-                
-                <div class="batsman-card">
-                    <h3>Non-Striker: <span id="nonStrikerName">Player 2</span></h3>
-                    <div>Runs: <span id="nonStrikerRuns">0</span></div>
-                    <div>Balls: <span id="nonStrikerBalls">0</span></div>
-                    <div>4s/6s: <span id="nonStrikerFours">0</span>/<span id="nonStrikerSixes">0</span></div>
-                    <div>Strike Rate: <span id="nonStrikerSR">0.00</span></div>
-                    <button class="change-batsman warning" data-position="nonStriker">Change Batsman</button>
-                </div>
+            <table class="batsmen-table">
+                <thead>
+                    <tr>
+                        <th>Batsman</th>
+                        <th>Runs</th>
+                        <th>Balls</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td id="strikerName">Player 1</td>
+                        <td id="strikerRuns">0</td>
+                        <td id="strikerBalls">0</td>
+                    </tr>
+                    <tr>
+                        <td id="nonStrikerName">Player 2</td>
+                        <td id="nonStrikerRuns">0</td>
+                        <td id="nonStrikerBalls">0</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="batsmen-actions">
+                <button id="changeStrikerBtn" class="warning">Change Striker</button>
+                <button id="changeNonStrikerBtn" class="warning">Change Non‑Striker</button>
+                <button id="replaceBatsmanBtn" class="secondary">Replace Batsman</button>
             </div>
             
             <h3>Record Ball</h3>
@@ -627,7 +692,18 @@
                 <button class="ball-btn danger" data-runs="wicketRun3">W+3</button>
                 <button class="ball-btn secondary" data-runs="wide">WD</button>
                 <button class="ball-btn secondary" data-runs="noBall">NB</button>
-                <button class="ball-btn info" id="undoBtn">Undo</button>
+                <button class="ball-btn info" id="undoBtn">Undo Last Ball</button>
+            </div>
+            
+            <div class="innings-tabs">
+                <button class="innings-tab active" data-innings="1">Innings 1</button>
+                <button class="innings-tab" data-innings="2">Innings 2</button>
+            </div>
+            
+            <h3>Ball-by-Ball Commentary</h3>
+            <div class="ball-by-ball" id="ballCommentary">
+                <div class="innings-commentary active" id="innings1Commentary"></div>
+                <div class="innings-commentary" id="innings2Commentary"></div>
             </div>
             
             <div class="btn-group">
@@ -636,6 +712,8 @@
                 <button id="endMatch" class="danger">End Match</button>
             </div>
             
+            <button id="sendStatusBtn" class="info" style="width:100%; margin:10px 0;">Send Match Status</button>
+
             <div id="teamStats">
                 <h3>Team Statistics</h3>
                 <div id="battingStats"></div>
@@ -647,7 +725,7 @@
             <div id="matchSummary"></div>
             <div class="summary-buttons">
                 <button id="statsReviewBtn" class="info">📊 Stats Review</button>
-                <button id="nextMatchBtn" class="success">🏏 Next Match</button>
+                <button id="nextMatchBtn" class="success">🏏 New Match</button>
             </div>
         </section>
         
@@ -716,6 +794,22 @@
         </div>
     </div>
 
+    <!-- Match Status Share Modal -->
+    <div class="modal" id="matchShareModal">
+        <div class="modal-content">
+            <h3>Send Match Status</h3>
+            <p>You can save or share the current match summary.</p>
+            <div class="modal-buttons" style="justify-content: space-between;">
+                <button class="secondary" id="shareCloseBtn">Close</button>
+                <button class="info" id="shareEmailBtn">Send Email</button>
+                <button class="primary" id="shareSaveBtn">Save Locally</button>
+                <button class="danger" id="shareResetBtn">Reset Match</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">Match reset. Ready for a new match.</div>
+
     <script>
         // Match state
         const matchState = {
@@ -770,7 +864,8 @@
             ballHistory: [], // This will now just be a reference to current innings
             currentOverBalls: [],
             matchEnded: false,
-            winner: null
+            winner: null,
+            shareFlowNewMatch: false
         };
 
         // DOM elements
@@ -795,7 +890,131 @@
         const statsReviewBtn = document.getElementById('statsReviewBtn');
         const nextMatchBtn = document.getElementById('nextMatchBtn');
         const backToSummaryBtn = document.getElementById('backToSummaryBtn');
-        
+        const sendStatusBtn = document.getElementById('sendStatusBtn');
+        const matchShareModal = document.getElementById('matchShareModal');
+        const shareSaveBtn = document.getElementById('shareSaveBtn');
+        const shareEmailBtn = document.getElementById('shareEmailBtn');
+        const shareCloseBtn = document.getElementById('shareCloseBtn');
+        const shareResetBtn = document.getElementById('shareResetBtn');
+        const toast = document.getElementById('toast');
+        const headerTeam1Name = document.getElementById('headerTeam1Name');
+        const headerTeam2Name = document.getElementById('headerTeam2Name');
+        const headerTeam1Score = document.getElementById('headerTeam1Score');
+        const headerTeam2Score = document.getElementById('headerTeam2Score');
+        const headerMatchStatus = document.getElementById('headerMatchStatus');
+
+        function updateHeader() {
+            const t1 = matchState.team1;
+            const t2 = matchState.team2;
+
+            headerTeam1Name.textContent = t1.name || 'Team 1';
+            headerTeam2Name.textContent = t2.name || 'Team 2';
+
+            const t1Overs = (t1.overs || 0).toFixed(1);
+            const t2Overs = (t2.overs || 0).toFixed(1);
+
+            headerTeam1Score.textContent = `${t1.score}/${t1.wickets} (${t1Overs})`;
+            headerTeam2Score.textContent = `${t2.score}/${t2.wickets} (${t2Overs})`;
+
+            let statusText = 'Not started';
+            if (matchState.matchEnded) {
+                if (t1.score > t2.score) {
+                    const margin = t1.score - t2.score;
+                    statusText = `${t1.name || 'Team 1'} won by ${margin} runs`;
+                } else if (t2.score > t1.score) {
+                    const wicketsLeft = 10 - t2.wickets;
+                    statusText = `${t2.name || 'Team 2'} won by ${wicketsLeft} wickets`;
+                } else {
+                    statusText = 'Match tied';
+                }
+            } else if (t1.score === 0 && t2.score === 0) {
+                statusText = 'Ready to start';
+            } else if (matchState.isFirstInnings) {
+                statusText = 'Innings 1 in progress';
+            } else {
+                statusText = 'Innings 2 in progress';
+            }
+
+            headerMatchStatus.textContent = statusText;
+        }
+
+        function getMatchSummaryText() {
+            const t1 = matchState.team1;
+            const t2 = matchState.team2;
+            const t1Overs = (t1.overs || 0).toFixed(1);
+            const t2Overs = (t2.overs || 0).toFixed(1);
+
+            let summary = `Match: ${t1.name || 'Team 1'} vs ${t2.name || 'Team 2'}\n`;
+            summary += `${t1.name || 'Team 1'}: ${t1.score}/${t1.wickets} in ${t1Overs} overs\n`;
+            summary += `${t2.name || 'Team 2'}: ${t2.score}/${t2.wickets} in ${t2Overs} overs\n`;
+
+            if (matchState.matchEnded) {
+                if (t1.score > t2.score) {
+                    const margin = t1.score - t2.score;
+                    summary += `Result: ${t1.name || 'Team 1'} won by ${margin} runs\n`;
+                } else if (t2.score > t1.score) {
+                    const wicketsLeft = 10 - t2.wickets;
+                    summary += `Result: ${t2.name || 'Team 2'} won by ${wicketsLeft} wickets\n`;
+                } else {
+                    summary += 'Result: Match tied\n';
+                }
+            } else {
+                summary += 'Status: In progress\n';
+            }
+
+            return summary;
+        }
+
+        function openShareModal(fromNewMatch = false) {
+            matchState.shareFlowNewMatch = fromNewMatch;
+            matchShareModal.style.display = 'flex';
+        }
+
+        function closeShareModal() {
+            matchShareModal.style.display = 'none';
+        }
+
+        function showToast(message) {
+            if (!toast) return;
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2500);
+        }
+
+        function handleShareSave() {
+            const summary = getMatchSummaryText();
+            const blob = new Blob([summary], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'match-summary.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function handleShareEmail() {
+            const t1Name = matchState.team1.name || 'Team 1';
+            const t2Name = matchState.team2.name || 'Team 2';
+            const subject = encodeURIComponent(`Match Status: ${t1Name} vs ${t2Name}`);
+            const body = encodeURIComponent(getMatchSummaryText());
+            window.location.href = `mailto:?subject=${subject}&body=${body}`;
+        }
+
+        function handleShareReset() {
+            closeShareModal();
+            exitMatch();
+            showToast('Match reset. Ready for a new match.');
+            matchState.shareFlowNewMatch = false;
+        }
+
+        function handleNewMatchClick() {
+            openShareModal(true);
+        }
+
         // Initialize the app
         function initApp() {
             startMatchBtn.addEventListener('click', startMatch);
@@ -807,11 +1026,36 @@
             
             // Summary buttons
             statsReviewBtn.addEventListener('click', showStatsReview);
-            nextMatchBtn.addEventListener('click', exitMatch);
+            nextMatchBtn.addEventListener('click', handleNewMatchClick);
             backToSummaryBtn.addEventListener('click', () => {
                 statsView.classList.add('hidden');
                 summaryView.classList.remove('hidden');
             });
+
+            if (sendStatusBtn) {
+                sendStatusBtn.addEventListener('click', () => openShareModal(false));
+            }
+
+            if (shareSaveBtn) {
+                shareSaveBtn.addEventListener('click', handleShareSave);
+            }
+
+            if (shareEmailBtn) {
+                shareEmailBtn.addEventListener('click', handleShareEmail);
+            }
+
+            if (shareCloseBtn) {
+                shareCloseBtn.addEventListener('click', () => {
+                    closeShareModal();
+                    if (matchState.shareFlowNewMatch) {
+                        handleShareReset();
+                    }
+                });
+            }
+
+            if (shareResetBtn) {
+                shareResetBtn.addEventListener('click', handleShareReset);
+            }
             
             // Innings tabs
             inningsTabs.forEach(tab => {
@@ -833,11 +1077,16 @@
             document.getElementById('cancelBatsman').addEventListener('click', hideBatsmanModal);
             document.getElementById('saveBatsman').addEventListener('click', saveBatsman);
             
-            // Change batsman buttons
-            document.querySelectorAll('.change-batsman').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    showBatsmanModal(this.getAttribute('data-position'));
-                });
+            // Batsman action buttons
+            document.getElementById('changeStrikerBtn').addEventListener('click', () => {
+                showBatsmanModal('striker');
+            });
+            document.getElementById('changeNonStrikerBtn').addEventListener('click', () => {
+                showBatsmanModal('nonStriker');
+            });
+            document.getElementById('replaceBatsmanBtn').addEventListener('click', () => {
+                const replaceStriker = confirm('OK = Replace Striker, Cancel = Replace Non‑Striker');
+                showBatsmanModal(replaceStriker ? 'striker' : 'nonStriker', 'Replace Batsman');
             });
             
             ballButtons.forEach(button => {
@@ -854,6 +1103,8 @@
             
             // Hide target info initially
             targetInfo.classList.add('hidden');
+
+            updateHeader();
         }
         
         // Switch innings tab
@@ -959,6 +1210,7 @@
             document.getElementById('matchTitle').textContent = `${team1Name} vs ${team2Name}`;
             document.getElementById('team1Display').textContent = team1Name;
             document.getElementById('team2Display').textContent = team2Name;
+            updateHeader();
             
             // Show match view, hide setup
             setupView.classList.add('hidden');
@@ -1341,6 +1593,8 @@
             
             document.getElementById('currentOver').textContent = 
                 `${matchState.currentOver}.${matchState.currentBall}`;
+
+            updateHeader();
         }
         
         // Update batsmen display
@@ -1353,16 +1607,10 @@
             document.getElementById('strikerName').textContent = matchState.striker.name || 'Not set';
             document.getElementById('strikerRuns').textContent = matchState.striker.runs;
             document.getElementById('strikerBalls').textContent = matchState.striker.balls;
-            document.getElementById('strikerFours').textContent = matchState.striker.fours;
-            document.getElementById('strikerSixes').textContent = matchState.striker.sixes;
-            document.getElementById('strikerSR').textContent = strikerSR;
             
             document.getElementById('nonStrikerName').textContent = matchState.nonStriker.name || 'Not set';
             document.getElementById('nonStrikerRuns').textContent = matchState.nonStriker.runs;
             document.getElementById('nonStrikerBalls').textContent = matchState.nonStriker.balls;
-            document.getElementById('nonStrikerFours').textContent = matchState.nonStriker.fours;
-            document.getElementById('nonStrikerSixes').textContent = matchState.nonStriker.sixes;
-            document.getElementById('nonStrikerSR').textContent = nonStrikerSR;
         }
         
         // Update bowler display
@@ -1902,6 +2150,8 @@
             // Show summary view, hide match view
             matchView.classList.add('hidden');
             summaryView.classList.remove('hidden');
+
+            updateHeader();
         }
         
         // Exit match (Next Match)
@@ -1944,6 +2194,7 @@
             matchState.currentOverBalls = [];
             matchState.matchEnded = false;
             matchState.winner = null;
+            matchState.shareFlowNewMatch = false;
             
             // Reset UI elements
             document.getElementById('team1Name').value = '';
@@ -1952,6 +2203,8 @@
             
             // Remove winner flags
             document.querySelectorAll('.winner-flag').forEach(flag => flag.remove());
+
+            updateHeader();
         }
         
         // Initialize the app when DOM is loaded
