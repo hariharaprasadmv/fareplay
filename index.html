@@ -213,6 +213,16 @@
             }
         }
         
+        .ball-input {
+            padding: 10px 6px;
+            font-size: 14px;
+            font-weight: bold;
+            min-height: 48px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
         .ball-btn {
             padding: 10px 6px;
             font-size: 14px;
@@ -635,7 +645,7 @@
                     <div class="current-score"><span id="team2Score">0</span>/<span id="team2Wickets">0</span></div>
                     <div>Overs: <span id="team2Overs">0</span></div>
                 </div>
-                
+
                 <div class="target-info hidden" id="targetInfo">
                     <h3>Target</h3>
                     <div class="current-score"><span id="targetRuns">0</span> runs</div>
@@ -692,11 +702,11 @@
                 <button class="ball-btn" data-runs="4">4</button>
                 <button class="ball-btn" data-runs="6">6</button>
                 <button class="ball-btn danger" data-runs="wicket">W</button>
-                <button class="ball-btn danger" data-runs="wicketRun1">W+1</button>
-                <button class="ball-btn danger" data-runs="wicketRun2">W+2</button>
-                <button class="ball-btn danger" data-runs="wicketRun3">W+3</button>
+                <button class="ball-btn danger" id="wicketPlusBtn">W+</button>
                 <button class="ball-btn secondary" data-runs="wide">WD</button>
+                <button class="ball-btn secondary" id="widePlusBtn">WD+</button>
                 <button class="ball-btn secondary" data-runs="noBall">NB</button>
+                <button class="ball-btn secondary" id="noBallPlusBtn">NB+</button>
                 <button class="ball-btn info" id="undoBtn">Undo Last Ball</button>
             </div>
             
@@ -944,21 +954,130 @@
             const t2Overs = (t2.overs || 0).toFixed(1);
 
             let summary = `Match: ${t1.name || 'Team 1'} vs ${t2.name || 'Team 2'}\n`;
+            summary += `Overs: ${matchState.totalOvers}\n\n`;
+
             summary += `${t1.name || 'Team 1'}: ${t1.score}/${t1.wickets} in ${t1Overs} overs\n`;
-            summary += `${t2.name || 'Team 2'}: ${t2.score}/${t2.wickets} in ${t2Overs} overs\n`;
+            summary += `${t2.name || 'Team 2'}: ${t2.score}/${t2.wickets} in ${t2Overs} overs\n\n`;
 
             if (matchState.matchEnded) {
                 if (t1.score > t2.score) {
                     const margin = t1.score - t2.score;
-                    summary += `Result: ${t1.name || 'Team 1'} won by ${margin} runs\n`;
+                    summary += `Result: ${t1.name || 'Team 1'} won by ${margin} runs\n\n`;
                 } else if (t2.score > t1.score) {
                     const wicketsLeft = 10 - t2.wickets;
-                    summary += `Result: ${t2.name || 'Team 2'} won by ${wicketsLeft} wickets\n`;
+                    summary += `Result: ${t2.name || 'Team 2'} won by ${wicketsLeft} wickets\n\n`;
                 } else {
-                    summary += 'Result: Match tied\n';
+                    summary += 'Result: Match tied\n\n';
                 }
             } else {
-                summary += 'Status: In progress\n';
+                summary += 'Status: In progress\n\n';
+            }
+
+            // Batting stats
+            summary += `${t1.name || 'Team 1'} Batting:\n`;
+            t1.players.forEach(player => {
+                const strikeRate = player.balls > 0 ? (player.runs / player.balls * 100).toFixed(2) : '0.00';
+                summary += `${player.name}: ${player.runs} (${player.balls}) 4s:${player.fours} 6s:${player.sixes} SR:${strikeRate}\n`;
+            });
+            summary += '\n';
+
+            if (t2.players.length > 0) {
+                summary += `${t2.name || 'Team 2'} Batting:\n`;
+                t2.players.forEach(player => {
+                    const strikeRate = player.balls > 0 ? (player.runs / player.balls * 100).toFixed(2) : '0.00';
+                    summary += `${player.name}: ${player.runs} (${player.balls}) 4s:${player.fours} 6s:${player.sixes} SR:${strikeRate}\n`;
+                });
+                summary += '\n';
+            }
+
+            // Bowling stats
+            summary += `${t2.name || 'Team 2'} Bowling:\n`;
+            t2.bowlers.forEach(bowler => {
+                const economy = bowler.overs > 0 ? (bowler.runs / bowler.overs).toFixed(2) : '0.00';
+                summary += `${bowler.name}: ${bowler.overs}-${bowler.maidens}-${bowler.runs}-${bowler.wickets} Econ:${economy}\n`;
+            });
+            summary += '\n';
+
+            if (t1.bowlers.length > 0) {
+                summary += `${t1.name || 'Team 1'} Bowling:\n`;
+                t1.bowlers.forEach(bowler => {
+                    const economy = bowler.overs > 0 ? (bowler.runs / bowler.overs).toFixed(2) : '0.00';
+                    summary += `${bowler.name}: ${bowler.overs}-${bowler.maidens}-${bowler.runs}-${bowler.wickets} Econ:${economy}\n`;
+                });
+                summary += '\n';
+            }
+
+            // Ball-by-ball
+            if (t1.ballHistory.length > 0) {
+                summary += `${t1.name || 'Team 1'} Ball-by-Ball:\n`;
+                const overs = groupBallsByOver(t1.ballHistory);
+                const overKeys = Object.keys(overs).sort((a, b) => a - b);
+                overKeys.forEach(overNum => {
+                    const overBalls = overs[overNum];
+                    const bowlerName = overBalls[0].bowler;
+                    const ballsText = overBalls.map(b => {
+                        if (b.result === '0') return '•';
+                        else if (b.result === '1') return '1';
+                        else if (b.result === '2') return '2';
+                        else if (b.result === '3') return '3';
+                        else if (b.result === '4') return '4';
+                        else if (b.result === '6') return '6';
+                        else if (b.result === 'wicket') return 'W';
+                        else if (b.result.startsWith('wicketPlus:')) {
+                            const parts = b.result.split(':');
+                            return 'W+' + parts[2];
+                        }
+                        else if (b.result === 'wide') return 'WD';
+                        else if (b.result.startsWith('widePlus:')) {
+                            const runs = b.result.split(':')[1];
+                            return 'WD+' + runs;
+                        }
+                        else if (b.result === 'noBall') return 'NB';
+                        else if (b.result.startsWith('noBallPlus:')) {
+                            const runs = b.result.split(':')[1];
+                            return 'NB+' + runs;
+                        }
+                        else return b.result;
+                    }).join(' ');
+                    summary += `Over ${parseInt(overNum, 10) + 1} (${bowlerName}): ${ballsText}\n`;
+                });
+                summary += '\n';
+            }
+
+            if (t2.ballHistory.length > 0) {
+                summary += `${t2.name || 'Team 2'} Ball-by-Ball:\n`;
+                const overs = groupBallsByOver(t2.ballHistory);
+                const overKeys = Object.keys(overs).sort((a, b) => a - b);
+                overKeys.forEach(overNum => {
+                    const overBalls = overs[overNum];
+                    const bowlerName = overBalls[0].bowler;
+                    const ballsText = overBalls.map(b => {
+                        if (b.result === '0') return '•';
+                        else if (b.result === '1') return '1';
+                        else if (b.result === '2') return '2';
+                        else if (b.result === '3') return '3';
+                        else if (b.result === '4') return '4';
+                        else if (b.result === '6') return '6';
+                        else if (b.result === 'wicket') return 'W';
+                        else if (b.result.startsWith('wicketPlus:')) {
+                            const parts = b.result.split(':');
+                            return 'W+' + parts[2];
+                        }
+                        else if (b.result === 'wide') return 'WD';
+                        else if (b.result.startsWith('widePlus:')) {
+                            const runs = b.result.split(':')[1];
+                            return 'WD+' + runs;
+                        }
+                        else if (b.result === 'noBall') return 'NB';
+                        else if (b.result.startsWith('noBallPlus:')) {
+                            const runs = b.result.split(':')[1];
+                            return 'NB+' + runs;
+                        }
+                        else return b.result;
+                    }).join(' ');
+                    summary += `Over ${parseInt(overNum, 10) + 1} (${bowlerName}): ${ballsText}\n`;
+                });
+                summary += '\n';
             }
 
             return summary;
@@ -1095,6 +1214,40 @@
                 });
             });
             
+            // New button event listeners
+            document.getElementById('wicketPlusBtn').addEventListener('click', () => {
+                const runs = prompt('Enter runs scored before wicket:');
+                const runsNum = parseInt(runs);
+                if (isNaN(runsNum) || runsNum < 1) {
+                    alert('Please enter valid runs');
+                    return;
+                }
+                // Prompt for which batsman is out
+                const strikerOut = confirm('OK = Striker out, Cancel = Non-Striker out');
+                const batsmanOut = strikerOut ? 'striker' : 'nonStriker';
+                recordBall('wicketPlus:' + batsmanOut + ':' + runsNum);
+            });
+            
+            document.getElementById('widePlusBtn').addEventListener('click', () => {
+                const runs = prompt('Enter additional runs for wide:');
+                const runsNum = parseInt(runs);
+                if (isNaN(runsNum) || runsNum < 1) {
+                    alert('Please enter valid runs');
+                    return;
+                }
+                recordBall('widePlus:' + runsNum);
+            });
+            
+            document.getElementById('noBallPlusBtn').addEventListener('click', () => {
+                const runs = prompt('Enter additional runs for no ball:');
+                const runsNum = parseInt(runs);
+                if (isNaN(runsNum) || runsNum < 1) {
+                    alert('Please enter valid runs');
+                    return;
+                }
+                recordBall('noBallPlus:' + runsNum);
+            });
+            
             // Validate inputs on change
             document.getElementById('team1Name').addEventListener('input', validateTeam1Name);
             document.getElementById('team2Name').addEventListener('input', validateTeam2Name);
@@ -1104,6 +1257,7 @@
             targetInfo.classList.add('hidden');
 
             updateHeader();
+
         }
         
         // Switch innings tab
@@ -1343,6 +1497,7 @@
             let runsToAdd = 0;
             let isWicket = false;
             let isExtra = false;
+            let batsmanToReplace = 'striker';
             
             // Check if match already won in second innings
             if (!matchState.isFirstInnings) {
@@ -1354,64 +1509,58 @@
             }
             
             // Handle different ball outcomes
-            switch(result) {
-                case 'wide':
-                    runsToAdd = 1;
-                    isExtra = true;
-                    break;
-                case 'noBall':
-                    runsToAdd = 1;
-                    isExtra = true;
-                    break;
-                case 'wicket':
-                    isWicket = true;
-                    matchState.currentBall += 1;
+            if (result === 'wide') {
+                runsToAdd = 1;
+                isExtra = true;
+            } else if (result === 'noBall') {
+                runsToAdd = 1;
+                isExtra = true;
+            } else if (result === 'wicket') {
+                isWicket = true;
+                matchState.currentBall += 1;
+                matchState.striker.balls += 1;
+                matchState.currentBowler.wickets += 1;
+                battingTeam.wickets += 1;
+            } else if (result.startsWith('wicketPlus:')) {
+                const parts = result.split(':');
+                const batsmanOut = parts[1];
+                const wicketRuns = parseInt(parts[2]);
+                runsToAdd = wicketRuns;
+                isWicket = true;
+                batsmanToReplace = batsmanOut;
+                if (batsmanOut === 'striker') {
+                    matchState.striker.runs += wicketRuns;
                     matchState.striker.balls += 1;
-                    matchState.currentBowler.wickets += 1;
-                    battingTeam.wickets += 1;
-                    break;
-                case 'wicketRun1':
-                    runsToAdd = 1;
-                    isWicket = true;
-                    matchState.striker.runs += 1;
-                    matchState.striker.balls += 1;
-                    matchState.currentBall += 1;
-                    matchState.currentBowler.wickets += 1;
-                    battingTeam.wickets += 1;
-                    break;
-                case 'wicketRun2':
-                    runsToAdd = 2;
-                    isWicket = true;
-                    matchState.striker.runs += 2;
-                    matchState.striker.balls += 1;
-                    matchState.currentBall += 1;
-                    matchState.currentBowler.wickets += 1;
-                    battingTeam.wickets += 1;
-                    break;
-                case 'wicketRun3':
-                    runsToAdd = 3;
-                    isWicket = true;
-                    matchState.striker.runs += 3;
-                    matchState.striker.balls += 1;
-                    matchState.currentBall += 1;
-                    matchState.currentBowler.wickets += 1;
-                    battingTeam.wickets += 1;
-                    break;
-                default:
-                    const runs = parseInt(result);
-                    runsToAdd = runs;
-                    matchState.striker.runs += runs;
-                    matchState.striker.balls += 1;
-                    matchState.currentBall += 1;
-                    
-                    // Update fours and sixes
-                    if (runs === 4) matchState.striker.fours += 1;
-                    if (runs === 6) matchState.striker.sixes += 1;
-                    
-                    // Change strike for odd number of runs
-                    if (runs % 2 !== 0) {
-                        swapBatsmen();
-                    }
+                } else {
+                    matchState.nonStriker.runs += wicketRuns;
+                    matchState.nonStriker.balls += 1;
+                }
+                matchState.currentBall += 1;
+                matchState.currentBowler.wickets += 1;
+                battingTeam.wickets += 1;
+            } else if (result.startsWith('widePlus:')) {
+                const wideRuns = parseInt(result.split(':')[1]);
+                runsToAdd = 1 + wideRuns;
+                isExtra = true;
+            } else if (result.startsWith('noBallPlus:')) {
+                const noBallRuns = parseInt(result.split(':')[1]);
+                runsToAdd = 1 + noBallRuns;
+                isExtra = true;
+            } else {
+                const runs = parseInt(result);
+                runsToAdd = runs;
+                matchState.striker.runs += runs;
+                matchState.striker.balls += 1;
+                matchState.currentBall += 1;
+                
+                // Update fours and sixes
+                if (runs === 4) matchState.striker.fours += 1;
+                if (runs === 6) matchState.striker.sixes += 1;
+                
+                // Change strike for odd number of runs
+                if (runs % 2 !== 0) {
+                    swapBatsmen();
+                }
             }
             
             // Add runs to team and bowler
@@ -1462,10 +1611,13 @@
                     // Swap batsmen at the end of over
                     swapBatsmen();
                     
-                    // Prompt for new bowler
-                    setTimeout(() => {
-                        showBowlerModal();
-                    }, 500);
+                    // Prompt for new bowler (not at end of innings)
+                    const oversComplete = matchState.currentOver === matchState.totalOvers && matchState.currentBall === 0;
+                    if (!oversComplete) {
+                        setTimeout(() => {
+                            showBowlerModal();
+                        }, 500);
+                    }
                     
                     // Reset current over balls
                     matchState.currentOverBalls = [];
@@ -1482,7 +1634,7 @@
             if (isWicket) {
                 // Show modal to add new batsman
                 setTimeout(() => {
-                    showBatsmanModal('striker', 'New Batsman Name');
+                    showBatsmanModal(batsmanToReplace, 'New Batsman Name');
                 }, 500);
             }
             
@@ -1697,19 +1849,36 @@
                     let ballClass = '';
                     let ballText = '';
                     
-                    switch(ball.result) {
-                        case '0': ballClass = 'ball-0'; ballText = '•'; break;
-                        case '1': ballClass = 'ball-1'; ballText = '1'; break;
-                        case '2': ballClass = 'ball-2'; ballText = '2'; break;
-                        case '3': ballClass = 'ball-3'; ballText = '3'; break;
-                        case '4': ballClass = 'ball-4'; ballText = '4'; break;
-                        case '6': ballClass = 'ball-6'; ballText = '6'; break;
-                        case 'wicket': ballClass = 'ball-w'; ballText = 'W'; break;
-                        case 'wicketRun1': ballClass = 'ball-wr'; ballText = 'W+1'; break;
-                        case 'wicketRun2': ballClass = 'ball-wr'; ballText = 'W+2'; break;
-                        case 'wicketRun3': ballClass = 'ball-wr'; ballText = 'W+3'; break;
-                        case 'wide': ballClass = 'ball-wd'; ballText = 'WD'; break;
-                        case 'noBall': ballClass = 'ball-nb'; ballText = 'NB'; break;
+                    if (ball.result === '0') {
+                        ballClass = 'ball-0'; ballText = '•';
+                    } else if (ball.result === '1') {
+                        ballClass = 'ball-1'; ballText = '1';
+                    } else if (ball.result === '2') {
+                        ballClass = 'ball-2'; ballText = '2';
+                    } else if (ball.result === '3') {
+                        ballClass = 'ball-3'; ballText = '3';
+                    } else if (ball.result === '4') {
+                        ballClass = 'ball-4'; ballText = '4';
+                    } else if (ball.result === '6') {
+                        ballClass = 'ball-6'; ballText = '6';
+                    } else if (ball.result === 'wicket') {
+                        ballClass = 'ball-w'; ballText = 'W';
+                    } else if (ball.result.startsWith('wicketPlus:')) {
+                        ballClass = 'ball-wr';
+                        const parts = ball.result.split(':');
+                        ballText = 'W+' + parts[2];
+                    } else if (ball.result === 'wide') {
+                        ballClass = 'ball-wd'; ballText = 'WD';
+                    } else if (ball.result.startsWith('widePlus:')) {
+                        ballClass = 'ball-wd';
+                        const runs = ball.result.split(':')[1];
+                        ballText = 'WD+' + runs;
+                    } else if (ball.result === 'noBall') {
+                        ballClass = 'ball-nb'; ballText = 'NB';
+                    } else if (ball.result.startsWith('noBallPlus:')) {
+                        ballClass = 'ball-nb';
+                        const runs = ball.result.split(':')[1];
+                        ballText = 'NB+' + runs;
                     }
                     
                     ballSpan.classList.add(ballClass);
@@ -2015,21 +2184,28 @@
                     const overBalls = overs[overNum];
                     const bowlerName = overBalls[0].bowler;
                     const ballsText = overBalls.map(b => {
-                        switch(b.result) {
-                            case '0': return '•';
-                            case '1': return '1';
-                            case '2': return '2';
-                            case '3': return '3';
-                            case '4': return '4';
-                            case '6': return '6';
-                            case 'wicket': return 'W';
-                            case 'wicketRun1': return 'W+1';
-                            case 'wicketRun2': return 'W+2';
-                            case 'wicketRun3': return 'W+3';
-                            case 'wide': return 'WD';
-                            case 'noBall': return 'NB';
-                            default: return b.result;
+                        if (b.result === '0') return '•';
+                        else if (b.result === '1') return '1';
+                        else if (b.result === '2') return '2';
+                        else if (b.result === '3') return '3';
+                        else if (b.result === '4') return '4';
+                        else if (b.result === '6') return '6';
+                        else if (b.result === 'wicket') return 'W';
+                        else if (b.result.startsWith('wicketPlus:')) {
+                            const parts = b.result.split(':');
+                            return 'W+' + parts[2];
                         }
+                        else if (b.result === 'wide') return 'WD';
+                        else if (b.result.startsWith('widePlus:')) {
+                            const runs = b.result.split(':')[1];
+                            return 'WD+' + runs;
+                        }
+                        else if (b.result === 'noBall') return 'NB';
+                        else if (b.result.startsWith('noBallPlus:')) {
+                            const runs = b.result.split(':')[1];
+                            return 'NB+' + runs;
+                        }
+                        else return b.result;
                     }).join(' ');
 
                     section += `
@@ -2062,50 +2238,67 @@
             const battingTeam = matchState.battingTeam === 1 ? matchState.team1 : matchState.team2;
             
             // Reverse the effects of the last ball
-            switch(lastBall.result) {
-                case 'wide':
-                case 'noBall':
-                    battingTeam.score -= lastBall.runs;
-                    matchState.currentBowler.runs -= lastBall.runs;
-                    break;
-                case 'wicket':
-                    matchState.currentBall -= 1;
-                    matchState.striker.balls -= 1;
-                    matchState.currentBowler.wickets -= 1;
-                    battingTeam.wickets -= 1;
-                    break;
-                case 'wicketRun1':
-                case 'wicketRun2':
-                case 'wicketRun3':
-                    const runs = parseInt(lastBall.result.replace('wicketRun', ''));
-                    battingTeam.score -= runs;
+            if (lastBall.result === 'wide') {
+                battingTeam.score -= lastBall.runs;
+                matchState.currentBowler.runs -= lastBall.runs;
+            } else if (lastBall.result === 'noBall') {
+                battingTeam.score -= lastBall.runs;
+                matchState.currentBowler.runs -= lastBall.runs;
+            } else if (lastBall.result === 'wicket') {
+                matchState.currentBall -= 1;
+                matchState.striker.balls -= 1;
+                matchState.currentBowler.wickets -= 1;
+                battingTeam.wickets -= 1;
+            } else if (lastBall.result.startsWith('wicketPlus:')) {
+                const parts = lastBall.result.split(':');
+                const batsmanOut = parts[1];
+                const runs = parseInt(parts[2]);
+                battingTeam.score -= runs;
+                if (batsmanOut === 'striker') {
                     matchState.striker.runs -= runs;
                     matchState.striker.balls -= 1;
-                    matchState.currentBall -= 1;
-                    matchState.currentBowler.runs -= runs;
-                    matchState.currentBowler.wickets -= 1;
-                    battingTeam.wickets -= 1;
-                    
-                    // Reverse fours/sixes if needed
-                    if (runs === 4) matchState.striker.fours -= 1;
-                    if (runs === 6) matchState.striker.sixes -= 1;
-                    break;
-                default:
-                    const runVal = parseInt(lastBall.result);
-                    battingTeam.score -= runVal;
-                    matchState.striker.runs -= runVal;
-                    matchState.striker.balls -= 1;
-                    matchState.currentBall -= 1;
-                    matchState.currentBowler.runs -= runVal;
-                    
-                    // Reverse fours/sixes if needed
-                    if (runVal === 4) matchState.striker.fours -= 1;
-                    if (runVal === 6) matchState.striker.sixes -= 1;
-                    
-                    // Reverse strike change for odd runs
-                    if (runVal % 2 !== 0) {
-                        swapBatsmen(); // Swapping again reverses the change
-                    }
+                } else {
+                    matchState.nonStriker.runs -= runs;
+                    matchState.nonStriker.balls -= 1;
+                }
+                matchState.currentBall -= 1;
+                matchState.currentBowler.runs -= runs;
+                matchState.currentBowler.wickets -= 1;
+                battingTeam.wickets -= 1;
+                
+                // Reverse fours/sixes if needed
+                if (runs === 4) {
+                    if (batsmanOut === 'striker') matchState.striker.fours -= 1;
+                    else matchState.nonStriker.fours -= 1;
+                }
+                if (runs === 6) {
+                    if (batsmanOut === 'striker') matchState.striker.sixes -= 1;
+                    else matchState.nonStriker.sixes -= 1;
+                }
+            } else if (lastBall.result.startsWith('widePlus:')) {
+                const runs = parseInt(lastBall.result.split(':')[1]);
+                battingTeam.score -= (1 + runs);
+                matchState.currentBowler.runs -= (1 + runs);
+            } else if (lastBall.result.startsWith('noBallPlus:')) {
+                const runs = parseInt(lastBall.result.split(':')[1]);
+                battingTeam.score -= (1 + runs);
+                matchState.currentBowler.runs -= (1 + runs);
+            } else {
+                const runVal = parseInt(lastBall.result);
+                battingTeam.score -= runVal;
+                matchState.striker.runs -= runVal;
+                matchState.striker.balls -= 1;
+                matchState.currentBall -= 1;
+                matchState.currentBowler.runs -= runVal;
+                
+                // Reverse fours/sixes if needed
+                if (runVal === 4) matchState.striker.fours -= 1;
+                if (runVal === 6) matchState.striker.sixes -= 1;
+                
+                // Reverse strike change for odd runs
+                if (runVal % 2 !== 0) {
+                    swapBatsmen(); // Swapping again reverses the change
+                }
             }
             
             // Update overs if needed
