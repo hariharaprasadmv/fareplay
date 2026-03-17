@@ -811,14 +811,23 @@
     <div class="modal" id="matchShareModal">
         <div class="modal-content">
             <h3>Send Match Status</h3>
-            <p>You can save or share the current match summary as TXT or Screenshots.</p>
+            <p>Choose an action for the current match.</p>
             <div class="modal-buttons" style="justify-content: space-between; flex-wrap: wrap;">
                 <button class="secondary" id="shareCloseBtn">Close</button>
-                <button class="info" id="shareTxtBtn">Share TXT</button>
-                <button class="info" id="shareStatsScreenshotBtn">Share Screenshot</button>
-                <button class="primary" id="saveTxtBtn">Save TXT</button>
-                <button class="primary" id="saveStatsScreenshotBtn">Save Screenshot</button>
+                <button class="info" id="modalStatsReviewBtn">Stats Review</button>
                 <button class="danger" id="shareResetBtn">Reset Match</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reset Match Confirmation Modal -->
+    <div class="modal" id="resetConfirmModal">
+        <div class="modal-content">
+            <h3>Confirm Reset</h3>
+            <p>Resetting will erase all match data.<br>Go back and save if you need to keep the stats.</p>
+            <div class="modal-buttons">
+                <button class="secondary" id="cancelResetBtn">Cancel</button>
+                <button class="danger" id="confirmResetBtn">Confirm Reset</button>
             </div>
         </div>
     </div>
@@ -913,12 +922,12 @@
         const shareStatsScreenshotBtn = document.getElementById('shareStatsScreenshotBtn');
         const sendStatusBtn = document.getElementById('sendStatusBtn');
         const matchShareModal = document.getElementById('matchShareModal');
-        const shareSaveBtn = document.getElementById('shareSaveBtn');
-        const shareEmailBtn = document.getElementById('shareEmailBtn');
         const shareCloseBtn = document.getElementById('shareCloseBtn');
         const shareResetBtn = document.getElementById('shareResetBtn');
-        const shareTxtBtn = document.getElementById('shareTxtBtn');
-        const saveTxtBtn = document.getElementById('saveTxtBtn');
+        const modalStatsReviewBtn = document.getElementById('modalStatsReviewBtn');
+        const resetConfirmModal = document.getElementById('resetConfirmModal');
+        const cancelResetBtn = document.getElementById('cancelResetBtn');
+        const confirmResetBtn = document.getElementById('confirmResetBtn');
         const toast = document.getElementById('toast');
         const headerTeam1Name = document.getElementById('headerTeam1Name');
         const headerTeam2Name = document.getElementById('headerTeam2Name');
@@ -1470,33 +1479,11 @@
                 sendStatusBtn.addEventListener('click', () => openShareModal(false));
             }
 
-            if (shareSaveBtn) {
-                shareSaveBtn.addEventListener('click', handleShareSave);
-            }
-
-            if (shareEmailBtn) {
-                shareEmailBtn.addEventListener('click', handleShareEmail);
-            }
-
-            if (shareTxtBtn) {
-                shareTxtBtn.addEventListener('click', () => {
-                    const summary = getMatchSummaryText();
-                    const blob = new Blob([summary], { type: 'text/plain' });
-                    const file = new File([blob], 'match-summary.txt', { type: 'text/plain' });
-                    shareFile(file, 'match-summary.txt', 'Match Summary TXT');
+            if (modalStatsReviewBtn) {
+                modalStatsReviewBtn.addEventListener('click', () => {
+                    closeShareModal();
+                    showStatsReview();
                 });
-            }
-
-            if (shareStatsScreenshotBtn) {
-                shareStatsScreenshotBtn.addEventListener('click', handleShareStatsScreenshot);
-            }
-
-            if (saveTxtBtn) {
-                saveTxtBtn.addEventListener('click', handleSaveTXT);
-            }
-
-            if (saveStatsScreenshotBtn) {
-                saveStatsScreenshotBtn.addEventListener('click', handleSaveStatsScreenshot);
             }
 
             if (shareCloseBtn) {
@@ -1509,7 +1496,26 @@
             }
 
             if (shareResetBtn) {
-                shareResetBtn.addEventListener('click', handleShareReset);
+                shareResetBtn.addEventListener('click', () => {
+                    closeShareModal();
+                    resetConfirmModal.style.display = 'flex';
+                });
+            }
+
+            if (cancelResetBtn) {
+                cancelResetBtn.addEventListener('click', () => {
+                    resetConfirmModal.style.display = 'none';
+                    matchShareModal.style.display = 'flex';
+                });
+            }
+
+            if (confirmResetBtn) {
+                confirmResetBtn.addEventListener('click', () => {
+                    resetConfirmModal.style.display = 'none';
+                    exitMatch();
+                    showToast('Match reset. Ready for a new match.');
+                    matchState.shareFlowNewMatch = false;
+                });
             }
             
             // Innings tabs
@@ -2891,5 +2897,9 @@
         // Initialize the app when DOM is loaded
         document.addEventListener('DOMContentLoaded', initApp);
     </script>
+
+    <footer style="text-align: center; padding: 10px; font-size: 12px; color: #666; background-color: #f9f9f9; border-top: 1px solid #ddd;">
+        ©2026 FairCricket - V0.12
+    </footer>
 </body>
 </html>
