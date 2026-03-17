@@ -1948,13 +1948,10 @@
                     // Swap batsmen at the end of over
                     swapBatsmen();
                     
-                    // Prompt for new bowler (not at end of innings)
-                    const oversComplete = matchState.currentOver === matchState.totalOvers && matchState.currentBall === 0;
-                    if (!oversComplete) {
-                        setTimeout(() => {
-                            showBowlerModal();
-                        }, 500);
-                    }
+                    // Prompt for new bowler
+                    setTimeout(() => {
+                        showBowlerModal();
+                    }, 500);
                     
                     // Reset current over balls
                     matchState.currentOverBalls = [];
