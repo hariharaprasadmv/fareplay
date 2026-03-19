@@ -163,8 +163,8 @@
         .scoreboard {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 15px;
-            margin-bottom: 15px;
+            gap: 10px;
+            margin-bottom: 10px;
         }
         
         @media (min-width: 768px) {
@@ -175,7 +175,7 @@
         
         .team-score {
             background-color: var(--accent);
-            padding: 12px;
+            padding: 10px;
             border-radius: 8px;
             text-align: center;
             position: relative;
@@ -183,7 +183,7 @@
         
         .target-info {
             background-color: #fff3cd;
-            padding: 12px;
+            padding: 10px;
             border-radius: 8px;
             text-align: center;
         }
@@ -540,6 +540,16 @@
                 margin-bottom: 12px;
             }
             
+            .scoreboard {
+                gap: 6px;
+                margin-bottom: 8px;
+            }
+            
+            .team-score,
+            .target-info {
+                padding: 8px;
+            }
+            
             h1 {
                 font-size: 1.5rem;
             }
@@ -630,10 +640,24 @@
             <button id="startMatch" class="primary">Start Match</button>
         </section>
         
+        <section id="knownIssuesSection" class="app-section">
+            <h2>Known Issues & Work-arounds</h2>
+            <ul style="line-height: 1.8; margin: 12px 0; padding-left: 20px;">
+                <li><strong>W+</strong> — Where wicket plus run couldn't be added. For now add a W and add Extras like WD to match the current match score.</li>
+                <li><strong>NB+ & WD+</strong> — Logic not working.</li>
+                <li><strong>Swap or Change Striker/Non-Striker</strong> — Use these buttons based on your match progress.</li>
+                <li><strong>Undo Last Action</strong> — Use this to reverse an action.</li>
+            </ul>
+        </section>
+        
         <section id="matchView" class="app-section hidden">
-            <h2>Live Match: <span id="matchTitle"></span></h2>
+            <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px; margin-bottom: 10px;">
+                <h2 style="margin: 0;">Live Match: <span id="matchTitle"></span></h2>
+                <button id="toggleMatchView" class="secondary">Hide Live Match</button>
+            </div>
             
-            <div class="scoreboard">
+            <div id="liveMatchContent">
+                <div class="scoreboard">
                 <div class="team-score" id="team1Scorecard">
                     <h3 id="team1Display"></h3>
                     <div class="current-score"><span id="team1Score">0</span>/<span id="team1Wickets">0</span></div>
@@ -654,6 +678,11 @@
                 </div>
             </div>
             
+            </div>
+        </section>
+        
+        <section id="batsmenSection" class="app-section hidden">
+            <h3>Current Batting</h3>
             <table class="batsmen-table">
                 <thead>
                     <tr>
@@ -677,11 +706,13 @@
             </table>
 
             <div class="batsmen-actions">
+                <button id="swapBatsmenBtn" class="secondary">Swap Batsman</button>
                 <button id="changeStrikerBtn" class="warning">Change Striker</button>
                 <button id="changeNonStrikerBtn" class="warning">Change Non‑Striker</button>
-                <button id="replaceBatsmanBtn" class="secondary">Replace Batsman</button>
             </div>
-
+        </section>
+        
+        <section id="recordingSection" class="app-section hidden">
             <h3>Current Over &amp; Ball-by-Ball</h3>
             <div class="ball-by-ball" id="ballCommentary">
                 <div class="overs-display">
@@ -832,6 +863,29 @@
         </div>
     </div>
 
+    <!-- Extra Runs Modal -->
+    <div class="modal" id="extraModal">
+        <div class="modal-content">
+            <h3 id="extraModalTitle">Extra Runs</h3>
+            <div class="form-group">
+                <label for="extraRunsInput">Runs:</label>
+                <input type="number" id="extraRunsInput" min="0" max="6" placeholder="0">
+                <div class="error-message" id="extraError"></div>
+            </div>
+            <div class="form-group" id="batsmanOutGroup" style="display: none;">
+                <label for="batsmanOutSelect">Batsman Out:</label>
+                <select id="batsmanOutSelect">
+                    <option value="striker">Striker</option>
+                    <option value="nonStriker">Non-Striker</option>
+                </select>
+            </div>
+            <div class="modal-buttons">
+                <button class="secondary" id="cancelExtra">Cancel</button>
+                <button class="primary" id="saveExtra">Save</button>
+            </div>
+        </div>
+    </div>
+
     <div id="toast" class="toast">Match reset. Ready for a new match.</div>
 
     <!-- Add jsPDF for PDF generation and html2canvas for screenshots -->
@@ -901,9 +955,11 @@
         const matchView = document.getElementById('matchView');
         const summaryView = document.getElementById('summaryView');
         const statsView = document.getElementById('statsView');
+        const recordingSection = document.getElementById('recordingSection');
+        const batsmenSection = document.getElementById('batsmenSection');
         const startMatchBtn = document.getElementById('startMatch');
         const endMatchBtn = document.getElementById('endMatch');
-        const swapBatsmenBtn = document.getElementById('swapBatsmen');
+        const swapBatsmenBtn = document.getElementById('swapBatsmenBtn');
         const changeInningsBtn = document.getElementById('changeInnings');
         const changeBowlerBtn = document.getElementById('changeBowler');
         const ballButtons = document.querySelectorAll('.ball-btn');
@@ -1450,6 +1506,57 @@
             openShareModal(true);
         }
 
+        // Show extra modal
+        function showExtraModal(type) {
+            let title = '';
+            if (type === 'noBall') title = 'No Ball + Runs';
+            else if (type === 'wide') title = 'Wide + Runs';
+            else if (type === 'wicket') title = 'Wicket + Runs';
+            showModal('extraModal', { 
+                title: title, 
+                inputsToClear: ['extraRunsInput'], 
+                errorsToClear: ['extraError'],
+                callback: () => {
+                    document.getElementById('extraRunsInput').setAttribute('data-type', type);
+                    const batsmanOutGroup = document.getElementById('batsmanOutGroup');
+                    if (type === 'wicket') {
+                        batsmanOutGroup.style.display = 'block';
+                    } else {
+                        batsmanOutGroup.style.display = 'none';
+                    }
+                }
+            });
+        }
+        
+        // Hide extra modal
+        function hideExtraModal() {
+            hideModal('extraModal');
+        }
+        
+        // Save extra
+        function saveExtra() {
+            const runsNum = parseInt(document.getElementById('extraRunsInput').value) || 0;
+            const type = document.getElementById('extraRunsInput').getAttribute('data-type');
+            
+            if (isNaN(runsNum) || runsNum < 1 || runsNum > 6) {
+                document.getElementById('extraError').textContent = 'Runs must be between 1 and 6';
+                return;
+            }
+            
+            let ballType = '';
+            if (type === 'noBall') ballType = 'noBallPlus';
+            else if (type === 'wide') ballType = 'widePlus';
+            else if (type === 'wicket') {
+                const batsmanOut = document.getElementById('batsmanOutSelect').value;
+                ballType = 'wicketPlus:' + batsmanOut + ':' + runsNum;
+            } else {
+                ballType = type + 'Plus:' + runsNum;
+            }
+            
+            recordBall(ballType);
+            hideExtraModal();
+        }
+
         // Initialize the app
         function initApp() {
             startMatchBtn.addEventListener('click', startMatch);
@@ -1458,6 +1565,17 @@
             changeInningsBtn.addEventListener('click', changeInnings);
             changeBowlerBtn.addEventListener('click', showBowlerModal);
             undoBtn.addEventListener('click', undoLastBall);
+            document.getElementById('toggleMatchView').addEventListener('click', () => {
+                const content = document.getElementById('liveMatchContent');
+                const button = document.getElementById('toggleMatchView');
+                if (content.style.display === 'none') {
+                    content.style.display = 'block';
+                    button.textContent = 'Hide Live Match';
+                } else {
+                    content.style.display = 'none';
+                    button.textContent = 'Show Live Match';
+                }
+            });
             
             // Summary buttons
             statsReviewBtn.addEventListener('click', showStatsReview);
@@ -1538,16 +1656,16 @@
             document.getElementById('cancelBatsman').addEventListener('click', hideBatsmanModal);
             document.getElementById('saveBatsman').addEventListener('click', saveBatsman);
             
+            // Extra modal events
+            document.getElementById('cancelExtra').addEventListener('click', hideExtraModal);
+            document.getElementById('saveExtra').addEventListener('click', saveExtra);
+            
             // Batsman action buttons
             document.getElementById('changeStrikerBtn').addEventListener('click', () => {
                 showBatsmanModal('striker');
             });
             document.getElementById('changeNonStrikerBtn').addEventListener('click', () => {
                 showBatsmanModal('nonStriker');
-            });
-            document.getElementById('replaceBatsmanBtn').addEventListener('click', () => {
-                const replaceStriker = confirm('OK = Replace Striker, Cancel = Replace Non‑Striker');
-                showBatsmanModal(replaceStriker ? 'striker' : 'nonStriker', 'Replace Batsman');
             });
             
             ballButtons.forEach(button => {
@@ -1557,38 +1675,17 @@
                 });
             });
             
-            // New button event listeners
+            // New button event listeners for extra modals
             document.getElementById('wicketPlusBtn').addEventListener('click', () => {
-                const runs = prompt('Enter runs scored before wicket:');
-                const runsNum = parseInt(runs);
-                if (isNaN(runsNum) || runsNum < 1) {
-                    alert('Please enter valid runs');
-                    return;
-                }
-                // Prompt for which batsman is out
-                const strikerOut = confirm('OK = Striker out, Cancel = Non-Striker out');
-                const batsmanOut = strikerOut ? 'striker' : 'nonStriker';
-                recordBall('wicketPlus:' + batsmanOut + ':' + runsNum);
+                showExtraModal('wicket');
             });
             
             document.getElementById('widePlusBtn').addEventListener('click', () => {
-                const runs = prompt('Enter additional runs for wide:');
-                const runsNum = parseInt(runs);
-                if (isNaN(runsNum) || runsNum < 1) {
-                    alert('Please enter valid runs');
-                    return;
-                }
-                recordBall('widePlus:' + runsNum);
+                showExtraModal('wide');
             });
             
             document.getElementById('noBallPlusBtn').addEventListener('click', () => {
-                const runs = prompt('Enter additional runs for no ball:');
-                const runsNum = parseInt(runs);
-                if (isNaN(runsNum) || runsNum < 1) {
-                    alert('Please enter valid runs');
-                    return;
-                }
-                recordBall('noBallPlus:' + runsNum);
+                showExtraModal('noBall');
             });
             
             // Validate inputs on change
@@ -1696,21 +1793,26 @@
             }
             
             // Update match state
-            matchState.team1.name = team1Name;
-            matchState.team2.name = team2Name;
+            matchState.team1.name = team1Name.toUpperCase();
+            matchState.team2.name = team2Name.toUpperCase();
             matchState.totalOvers = overs;
             matchState.matchEnded = false;
             matchState.winner = null;
             
             // Update UI
-            document.getElementById('matchTitle').textContent = `${team1Name} vs ${team2Name}`;
-            document.getElementById('team1Display').textContent = team1Name;
-            document.getElementById('team2Display').textContent = team2Name;
+            document.getElementById('matchTitle').textContent = `${matchState.team1.name} vs ${matchState.team2.name}`;
+            document.getElementById('team1Display').textContent = matchState.team1.name;
+            document.getElementById('team2Display').textContent = matchState.team2.name;
             updateHeader();
             
             // Show match view, hide setup
             setupView.classList.add('hidden');
+            document.getElementById('knownIssuesSection').classList.add('hidden');
             matchView.classList.remove('hidden');
+            recordingSection.classList.remove('hidden');
+            batsmenSection.classList.remove('hidden');
+            document.getElementById('liveMatchContent').style.display = 'block';
+            document.getElementById('toggleMatchView').textContent = 'Hide Live Match';
             
             // Initialize first innings
             matchState.isFirstInnings = true;
@@ -1760,10 +1862,10 @@
             
             if (!isValid) return;
             
-            // Set names
-            matchState.striker.name = strikerName;
-            matchState.nonStriker.name = nonStrikerName;
-            matchState.currentBowler.name = bowlerName;
+            // Set names (converted to uppercase)
+            matchState.striker.name = strikerName.toUpperCase();
+            matchState.nonStriker.name = nonStrikerName.toUpperCase();
+            matchState.currentBowler.name = bowlerName.toUpperCase();
             
             // Reset batsmen stats
             matchState.striker.runs = 0;
@@ -1781,7 +1883,7 @@
             
             // Add striker
             battingTeam.players.push({
-                name: strikerName,
+                name: strikerName.toUpperCase(),
                 runs: 0,
                 balls: 0,
                 fours: 0,
@@ -1790,7 +1892,7 @@
             
             // Add non-striker
             battingTeam.players.push({
-                name: nonStrikerName,
+                name: nonStrikerName.toUpperCase(),
                 runs: 0,
                 balls: 0,
                 fours: 0,
@@ -1800,7 +1902,7 @@
             // Add bowler to bowlers list
             const bowlingTeam = matchState.battingTeam === 1 ? matchState.team2 : matchState.team1;
             bowlingTeam.bowlers.push({
-                name: bowlerName,
+                name: bowlerName.toUpperCase(),
                 overs: 0,
                 maidens: 0,
                 runs: 0,
@@ -2105,7 +2207,7 @@
             const nonStrikerSR = matchState.nonStriker.balls > 0 ? 
                 (matchState.nonStriker.runs / matchState.nonStriker.balls * 100).toFixed(2) : '0.00';
             
-            document.getElementById('strikerName').textContent = matchState.striker.name || 'Not set';
+            document.getElementById('strikerName').textContent = (matchState.striker.name || 'Not set') + ' *';
             document.getElementById('strikerRuns').textContent = matchState.striker.runs;
             document.getElementById('strikerBalls').textContent = matchState.striker.balls;
             
@@ -2254,13 +2356,13 @@
             }
             
             if (bowlerName) {
-                matchState.currentBowler.name = bowlerName;
+                matchState.currentBowler.name = bowlerName.toUpperCase();
                 
                 // Add to bowlers list if not already there
                 const bowlingTeam = matchState.battingTeam === 1 ? matchState.team2 : matchState.team1;
-                if (!bowlingTeam.bowlers.find(b => b.name === bowlerName)) {
+                if (!bowlingTeam.bowlers.find(b => b.name === bowlerName.toUpperCase())) {
                     bowlingTeam.bowlers.push({
-                        name: bowlerName,
+                        name: bowlerName.toUpperCase(),
                         overs: 0,
                         maidens: 0,
                         runs: 0,
@@ -2299,15 +2401,15 @@
             
             if (batsmanName) {
                 if (position === 'striker') {
-                    matchState.striker.name = batsmanName;
+                    matchState.striker.name = batsmanName.toUpperCase();
                 } else {
-                    matchState.nonStriker.name = batsmanName;
+                    matchState.nonStriker.name = batsmanName.toUpperCase();
                 }
                 
                 // Add to players list
                 const battingTeam = matchState.battingTeam === 1 ? matchState.team1 : matchState.team2;
                 battingTeam.players.push({
-                    name: batsmanName,
+                    name: batsmanName.toUpperCase(),
                     runs: 0,
                     balls: 0,
                     fours: 0,
@@ -2789,8 +2891,10 @@
                 </div>
             `;
             
-            // Show summary view, hide match view
+            // Show summary view, hide match view and recording sections
             matchView.classList.add('hidden');
+            recordingSection.classList.add('hidden');
+            batsmenSection.classList.add('hidden');
             summaryView.classList.remove('hidden');
 
             updateHeader();
@@ -2800,7 +2904,11 @@
         function exitMatch() {
             summaryView.classList.add('hidden');
             statsView.classList.add('hidden');
+            matchView.classList.add('hidden');
+            recordingSection.classList.add('hidden');
+            document.getElementById('batsmenSection').classList.add('hidden');
             setupView.classList.remove('hidden');
+            document.getElementById('knownIssuesSection').classList.remove('hidden');
             
             // Reset match state
             resetMatchState();
@@ -2899,7 +3007,7 @@
     </script>
 
     <footer style="text-align: center; padding: 10px; font-size: 12px; color: #666; background-color: #f9f9f9; border-top: 1px solid #ddd;">
-        ©2026 FairCricket - V0.13
+        ©2026 FairCricket - V0.14
     </footer>
 </body>
 </html>
