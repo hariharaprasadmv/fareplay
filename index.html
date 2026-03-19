@@ -2582,65 +2582,6 @@
             });
             
             html += `</table>`;
-            
-            // Second team batting
-            html += `
-                <div class="summary-title" style="margin-top:20px;">🏏 ${matchState.team2.name} Batting</div>
-                <table class="team-stats">
-                    <tr>
-                        <th style="width: 120px;">Batsman</th>
-                        <th style="width: 40px;">R</th>
-                        <th style="width: 40px;">B</th>
-                        <th style="width: 35px;">4s</th>
-                        <th style="width: 35px;">6s</th>
-                        <th style="width: 50px;">S/R</th>
-                    </tr>
-            `;
-            
-            matchState.team2.players.forEach(player => {
-                const strikeRate = player.balls > 0 ? (player.runs / player.balls * 100).toFixed(2) : '0.00';
-                html += `
-                    <tr>
-                        <td style="width: 120px;">${player.name}</td>
-                        <td style="width: 40px;">${player.runs}</td>
-                        <td style="width: 40px;">${player.balls}</td>
-                        <td style="width: 35px;">${player.fours}</td>
-                        <td style="width: 35px;">${player.sixes}</td>
-                        <td style="width: 50px;">${strikeRate}</td>
-                    </tr>
-                `;
-            });
-            
-            html += `</table>`;
-            
-            html += `
-                <div class="summary-title" style="margin-top:20px;">🎯 ${matchState.team1.name} Bowling</div>
-                <table class="team-stats">
-                    <tr>
-                        <th style="width: 120px;">Bowler</th>
-                        <th style="width: 40px;">O</th>
-                        <th style="width: 40px;">M</th>
-                        <th style="width: 40px;">R</th>
-                        <th style="width: 40px;">W</th>
-                        <th style="width: 50px;">Econ</th>
-                    </tr>
-            `;
-            
-            matchState.team1.bowlers.forEach(bowler => {
-                const economy = bowler.overs > 0 ? (bowler.runs / bowler.overs).toFixed(2) : '0.00';
-                html += `
-                    <tr>
-                        <td style="width: 120px;">${bowler.name}</td>
-                        <td style="width: 40px;">${bowler.overs}</td>
-                        <td style="width: 40px;">${bowler.maidens}</td>
-                        <td style="width: 40px;">${bowler.runs}</td>
-                        <td style="width: 40px;">${bowler.wickets}</td>
-                        <td style="width: 50px;">${economy}</td>
-                    </tr>
-                `;
-            });
-            
-            html += `</table>`;
 
             // Ball-by-ball sections for both innings
             const buildBallByBallSection = (title, ballHistory) => {
@@ -2700,6 +2641,67 @@
             };
 
             html += buildBallByBallSection('📝 Ball-by-Ball – Innings 1', matchState.team1.ballHistory);
+            
+            // Second team batting
+            html += `
+                <div class="summary-card">
+                    <div class="summary-title">🏏 ${matchState.team2.name} Batting</div>
+                    <table class="team-stats">
+                        <tr>
+                            <th style="width: 120px;">Batsman</th>
+                            <th style="width: 40px;">R</th>
+                            <th style="width: 40px;">B</th>
+                            <th style="width: 35px;">4s</th>
+                            <th style="width: 35px;">6s</th>
+                            <th style="width: 50px;">S/R</th>
+                        </tr>
+            `;
+            
+            matchState.team2.players.forEach(player => {
+                const strikeRate = player.balls > 0 ? (player.runs / player.balls * 100).toFixed(2) : '0.00';
+                html += `
+                    <tr>
+                        <td style="width: 120px;">${player.name}</td>
+                        <td style="width: 40px;">${player.runs}</td>
+                        <td style="width: 40px;">${player.balls}</td>
+                        <td style="width: 35px;">${player.fours}</td>
+                        <td style="width: 35px;">${player.sixes}</td>
+                        <td style="width: 50px;">${strikeRate}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `</table>`;
+            
+            html += `
+                <div class="summary-title" style="margin-top:20px;">🎯 ${matchState.team1.name} Bowling</div>
+                <table class="team-stats">
+                    <tr>
+                        <th style="width: 120px;">Bowler</th>
+                        <th style="width: 40px;">O</th>
+                        <th style="width: 40px;">M</th>
+                        <th style="width: 40px;">R</th>
+                        <th style="width: 40px;">W</th>
+                        <th style="width: 50px;">Econ</th>
+                    </tr>
+            `;
+            
+            matchState.team1.bowlers.forEach(bowler => {
+                const economy = bowler.overs > 0 ? (bowler.runs / bowler.overs).toFixed(2) : '0.00';
+                html += `
+                    <tr>
+                        <td style="width: 120px;">${bowler.name}</td>
+                        <td style="width: 40px;">${bowler.overs}</td>
+                        <td style="width: 40px;">${bowler.maidens}</td>
+                        <td style="width: 40px;">${bowler.runs}</td>
+                        <td style="width: 40px;">${bowler.wickets}</td>
+                        <td style="width: 50px;">${economy}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `</table>`;
+
             html += buildBallByBallSection('📝 Ball-by-Ball – Innings 2', matchState.team2.ballHistory);
             
             statsDiv.innerHTML = html;
