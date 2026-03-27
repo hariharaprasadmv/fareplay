@@ -43,10 +43,24 @@
             color: white;
             padding: 0.4rem 0.6rem;
             border-radius: 8px;
-            margin-bottom: 10px;
+            margin-bottom: 0;
+        }
+        
+        .header-tabs-wrapper {
             position: sticky;
             top: 0;
             z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .match-tabs-container {
+            background: #fff;
+            border-radius: 8px;
+            padding: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
         .header-grid {
@@ -163,8 +177,8 @@
         .scoreboard {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 15px;
-            margin-bottom: 15px;
+            gap: 10px;
+            margin-bottom: 10px;
         }
         
         @media (min-width: 768px) {
@@ -175,7 +189,7 @@
         
         .team-score {
             background-color: var(--accent);
-            padding: 12px;
+            padding: 10px;
             border-radius: 8px;
             text-align: center;
             position: relative;
@@ -183,7 +197,7 @@
         
         .target-info {
             background-color: #fff3cd;
-            padding: 12px;
+            padding: 10px;
             border-radius: 8px;
             text-align: center;
         }
@@ -196,7 +210,7 @@
         
         .ball-controls {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 8px;
             margin-bottom: 15px;
         }
@@ -224,10 +238,10 @@
         }
         
         .ball-btn {
-            padding: 10px 6px;
-            font-size: 14px;
+            padding: 8px 6px;
+            font-size: 13px;
             font-weight: bold;
-            min-height: 48px;
+            min-height: 42px;
         }
         
         .overs-display {
@@ -241,6 +255,66 @@
         
         .hidden {
             display: none !important;
+        }
+        
+        /* Tab switching should not interfere with existing match-state `hidden` logic.
+           We apply `tab-hidden` for tab visibility, while match code still uses `hidden`. */
+        .tab-hidden {
+            display: none !important;
+        }
+        
+        /* Sliding top-level match tabs (Setup / LiveMatch / Scoring / Team Info / Summary) */
+        .match-tabs {
+            --active-index: 0;
+            position: relative;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            background: var(--light);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            border: 1px solid #eaeaea;
+        }
+        
+        .match-tabs-indicator {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            width: calc(100% / 5);
+            background: var(--primary);
+            transform: translateX(calc(var(--active-index) * 100%));
+            transition: transform 0.25s ease;
+            z-index: 0;
+        }
+        
+        .match-tab {
+            position: relative;
+            z-index: 1;
+            background: transparent;
+            border: none;
+            color: var(--text);
+            padding: 12px 10px;
+            font-weight: 700;
+            cursor: pointer;
+            min-height: 44px;
+            touch-action: manipulation;
+            text-align: center;
+        }
+        
+        .match-tab.active {
+            color: #fff;
+        }
+        
+        .match-tab:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: -2px;
+        }
+        
+        /* Subtle divider lines between tabs */
+        .match-tab:not(:last-child) {
+            border-right: 1px solid rgba(0, 0, 0, 0.06);
         }
         
         #matchView {
@@ -267,9 +341,15 @@
 
         .batsmen-actions {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 6px;
             margin-bottom: 12px;
+        }
+        
+        .batsmen-actions button {
+            padding: 10px 6px;
+            font-size: 13px;
+            min-height: 44px;
         }
         
         .innings-tabs {
@@ -332,13 +412,13 @@
         
         .over-content {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(8, 1fr);
             gap: 5px;
         }
         
         @media (min-width: 480px) {
             .over-content {
-                grid-template-columns: repeat(6, 1fr);
+                grid-template-columns: repeat(12, 1fr);
             }
         }
         
@@ -540,6 +620,16 @@
                 margin-bottom: 12px;
             }
             
+            .scoreboard {
+                gap: 6px;
+                margin-bottom: 8px;
+            }
+            
+            .team-score,
+            .target-info {
+                padding: 8px;
+            }
+            
             h1 {
                 font-size: 1.5rem;
             }
@@ -589,6 +679,7 @@
 </head>
 <body>
     <div class="container">
+        <div class="header-tabs-wrapper">
         <header id="matchHeader">
             <div class="header-grid">
                 <div class="header-team">
@@ -605,6 +696,19 @@
                 </div>
             </div>
         </header>
+        
+        <div class="match-tabs-container">
+            <!-- Sliding top-level tabs (Setup / LiveMatch / Scoring / Team Info / Summary) -->
+            <div id="matchTabs" class="match-tabs" role="tablist" aria-label="Match sections" style="--active-index:0;">
+                <div class="match-tabs-indicator"></div>
+                <button type="button" class="match-tab active" data-tab-index="0" role="tab" aria-selected="true">Setup</button>
+                <button type="button" class="match-tab" data-tab-index="1" role="tab" aria-selected="false">LiveMatch</button>
+                <button type="button" class="match-tab" data-tab-index="2" role="tab" aria-selected="false">Scoring</button>
+                <button type="button" class="match-tab" data-tab-index="3" role="tab" aria-selected="false">Team Information</button>
+                <button type="button" class="match-tab" data-tab-index="4" role="tab" aria-selected="false">Match Summary</button>
+            </div>
+        </div>
+        </div>
         
         <section id="setupView" class="app-section">
             <h2>Match Setup</h2>
@@ -630,10 +734,24 @@
             <button id="startMatch" class="primary">Start Match</button>
         </section>
         
+        <section id="knownIssuesSection" class="app-section">
+            <h2>Known Issues & Work-arounds</h2>
+            <ul style="line-height: 1.8; margin: 12px 0; padding-left: 20px;">
+                <li><strong>W+</strong> — Where wicket plus run couldn't be added. For now add a W and add Extras like WD to match the current match score.</li>
+                <li><strong>NB+ & WD+</strong> — Logic not working.</li>
+                <li><strong>Swap or Change Striker/Non-Striker</strong> — Use these buttons based on your match progress.</li>
+                <li><strong>Undo Last Action</strong> — Use this to reverse an action.</li>
+            </ul>
+        </section>
+        
         <section id="matchView" class="app-section hidden">
-            <h2>Live Match: <span id="matchTitle"></span></h2>
+            <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px; margin-bottom: 10px;">
+                <h2 style="margin: 0;">Live Match: <span id="matchTitle"></span></h2>
+                <button id="goToScoringTabBtn" class="secondary">Scoring</button>
+            </div>
             
-            <div class="scoreboard">
+            <div id="liveMatchContent">
+                <div class="scoreboard">
                 <div class="team-score" id="team1Scorecard">
                     <h3 id="team1Display"></h3>
                     <div class="current-score"><span id="team1Score">0</span>/<span id="team1Wickets">0</span></div>
@@ -654,12 +772,20 @@
                 </div>
             </div>
             
-            <table class="batsmen-table">
+            </div>
+        </section>
+        
+        <section id="batsmenSection" class="app-section hidden">
+            <div style="font-weight:700; margin-bottom: 8px; color: var(--primary); font-size: calc(16px + 0.5vw);">Current Batting &amp; Bowling</div>
+            <table class="batsmen-table" style="margin-bottom: 10px;">
                 <thead>
                     <tr>
                         <th>Batsman</th>
-                        <th>Runs</th>
-                        <th>Balls</th>
+                        <th>R</th>
+                        <th>B</th>
+                        <th>4s</th>
+                        <th>6s</th>
+                        <th>SR</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -667,27 +793,77 @@
                         <td id="strikerName">Player 1</td>
                         <td id="strikerRuns">0</td>
                         <td id="strikerBalls">0</td>
+                        <td id="strikerFours">0</td>
+                        <td id="strikerSixes">0</td>
+                        <td id="strikerSR">0.0</td>
                     </tr>
                     <tr>
                         <td id="nonStrikerName">Player 2</td>
                         <td id="nonStrikerRuns">0</td>
                         <td id="nonStrikerBalls">0</td>
+                        <td id="nonStrikerFours">0</td>
+                        <td id="nonStrikerSixes">0</td>
+                        <td id="nonStrikerSR">0.0</td>
                     </tr>
                 </tbody>
             </table>
-
+            
+            <table class="batsmen-table" style="margin-bottom: 12px;">
+                <thead>
+                    <tr>
+                        <th>Bowler</th>
+                        <th>O</th>
+                        <th>M</th>
+                        <th>R</th>
+                        <th>W</th>
+                        <th>Eco</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td id="currentBowlerName">None *</td>
+                        <td id="currentBowlerO">0</td>
+                        <td id="currentBowlerM">0</td>
+                        <td id="currentBowlerR">0</td>
+                        <td id="currentBowlerW">0</td>
+                        <td id="currentBowlerEco">0.0</td>
+                    </tr>
+                </tbody>
+            </table>
+            
             <div class="batsmen-actions">
+                <button id="swapBatsmenBtn" class="secondary">Swap Batsman</button>
                 <button id="changeStrikerBtn" class="warning">Change Striker</button>
                 <button id="changeNonStrikerBtn" class="warning">Change Non‑Striker</button>
-                <button id="replaceBatsmanBtn" class="secondary">Replace Batsman</button>
+                <button id="changeBowler" class="info">Change Bowler</button>
             </div>
-
+        </section>
+        
+        <section id="recordingSection" class="app-section hidden">
             <h3>Current Over &amp; Ball-by-Ball</h3>
             <div class="ball-by-ball" id="ballCommentary">
                 <div class="overs-display">
-                    Current Over: <span id="currentOver">0.0</span> | 
-                    Bowler: <span id="currentBowler">None</span> |
-                    <button id="changeBowler" class="info">Change Bowler</button>
+                    <div style="display:flex; justify-content: space-between; align-items:center; gap: 10px; margin-bottom: 8px;">
+                        <div style="font-weight:700;">Current Over: <span id="currentOver">0.0</span></div>
+                    </div>
+                    <table class="team-stats" style="width:100%; margin:0;">
+                        <tr>
+                            <th>Bowler</th>
+                            <th>O</th>
+                            <th>M</th>
+                            <th>R</th>
+                            <th>W</th>
+                            <th>Eco</th>
+                        </tr>
+                        <tr>
+                            <td id="currentOverBowlerName">None *</td>
+                            <td id="currentOverBowlerO">0</td>
+                            <td id="currentOverBowlerM">0</td>
+                            <td id="currentOverBowlerR">0</td>
+                            <td id="currentOverBowlerW">0</td>
+                            <td id="currentOverBowlerEco">0.0</td>
+                        </tr>
+                    </table>
                 </div>
                 <div class="innings-commentary active" id="innings1Commentary"></div>
                 <div class="innings-commentary" id="innings2Commentary"></div>
@@ -722,7 +898,9 @@
             </div>
             
             <button id="sendStatusBtn" class="info" style="width:100%; margin:10px 0;">Send Match Status</button>
-
+        </section>
+        
+        <section id="teamInfoView" class="app-section hidden">
             <div id="teamStats">
                 <h3>Team Statistics</h3>
                 <div id="battingStats"></div>
@@ -832,6 +1010,29 @@
         </div>
     </div>
 
+    <!-- Extra Runs Modal -->
+    <div class="modal" id="extraModal">
+        <div class="modal-content">
+            <h3 id="extraModalTitle">Extra Runs</h3>
+            <div class="form-group">
+                <label for="extraRunsInput">Runs:</label>
+                <input type="number" id="extraRunsInput" min="0" max="6" placeholder="0">
+                <div class="error-message" id="extraError"></div>
+            </div>
+            <div class="form-group" id="batsmanOutGroup" style="display: none;">
+                <label for="batsmanOutSelect">Batsman Out:</label>
+                <select id="batsmanOutSelect">
+                    <option value="striker">Striker</option>
+                    <option value="nonStriker">Non-Striker</option>
+                </select>
+            </div>
+            <div class="modal-buttons">
+                <button class="secondary" id="cancelExtra">Cancel</button>
+                <button class="primary" id="saveExtra">Save</button>
+            </div>
+        </div>
+    </div>
+
     <div id="toast" class="toast">Match reset. Ready for a new match.</div>
 
     <!-- Add jsPDF for PDF generation and html2canvas for screenshots -->
@@ -901,9 +1102,12 @@
         const matchView = document.getElementById('matchView');
         const summaryView = document.getElementById('summaryView');
         const statsView = document.getElementById('statsView');
+        const recordingSection = document.getElementById('recordingSection');
+        const batsmenSection = document.getElementById('batsmenSection');
+        const teamInfoView = document.getElementById('teamInfoView');
         const startMatchBtn = document.getElementById('startMatch');
         const endMatchBtn = document.getElementById('endMatch');
-        const swapBatsmenBtn = document.getElementById('swapBatsmen');
+        const swapBatsmenBtn = document.getElementById('swapBatsmenBtn');
         const changeInningsBtn = document.getElementById('changeInnings');
         const changeBowlerBtn = document.getElementById('changeBowler');
         const ballButtons = document.querySelectorAll('.ball-btn');
@@ -934,6 +1138,23 @@
         const headerTeam1Score = document.getElementById('headerTeam1Score');
         const headerTeam2Score = document.getElementById('headerTeam2Score');
         const headerMatchStatus = document.getElementById('headerMatchStatus');
+        
+        // Match tabs configuration:
+        // Tab1: Setup + Known issues
+        // Tab2: LiveMatch
+        // Tab3: Scoring (batting + recording)
+        // Tab4: Team statistics
+        // Tab5: Match summary + detailed statistics
+        const matchTabs = document.getElementById('matchTabs');
+        const matchTabButtons = document.querySelectorAll('.match-tab');
+        const matchTabConfig = [
+            { sectionIds: ['setupView', 'knownIssuesSection'] }, // 0
+            { sectionIds: ['matchView'] }, // 1
+            { sectionIds: ['batsmenSection', 'recordingSection'] }, // 2
+            { sectionIds: ['teamInfoView'] }, // 3
+            { sectionIds: ['summaryView', 'statsView'] } // 4
+        ];
+        const matchTabSectionIds = [...new Set(matchTabConfig.flatMap(t => t.sectionIds))];
 
         function updateHeader() {
             const t1 = matchState.team1;
@@ -968,6 +1189,41 @@
             }
 
             headerMatchStatus.textContent = statusText;
+        }
+        
+        function setActiveMatchTab(tabIndex) {
+            if (!matchTabs || !matchTabButtons || !matchTabConfig[tabIndex]) return;
+            
+            matchTabs.style.setProperty('--active-index', String(tabIndex));
+            
+            matchTabButtons.forEach(btn => {
+                const idx = parseInt(btn.getAttribute('data-tab-index'), 10);
+                const isActive = idx === tabIndex;
+                btn.classList.toggle('active', isActive);
+                btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
+            
+            const activeSectionIds = new Set(matchTabConfig[tabIndex].sectionIds);
+            matchTabSectionIds.forEach(sectionId => {
+                const el = document.getElementById(sectionId);
+                if (!el) return;
+                if (activeSectionIds.has(sectionId)) el.classList.remove('tab-hidden');
+                else el.classList.add('tab-hidden');
+            });
+        }
+        
+        function initMatchTabs() {
+            if (!matchTabs) return;
+            
+            matchTabButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabIndex = parseInt(btn.getAttribute('data-tab-index'), 10);
+                    setActiveMatchTab(tabIndex);
+                });
+            });
+            
+            // Default tab on load
+            setActiveMatchTab(0);
         }
 
         function getMatchSummaryText() {
@@ -1450,6 +1706,57 @@
             openShareModal(true);
         }
 
+        // Show extra modal
+        function showExtraModal(type) {
+            let title = '';
+            if (type === 'noBall') title = 'No Ball + Runs';
+            else if (type === 'wide') title = 'Wide + Runs';
+            else if (type === 'wicket') title = 'Wicket + Runs';
+            showModal('extraModal', { 
+                title: title, 
+                inputsToClear: ['extraRunsInput'], 
+                errorsToClear: ['extraError'],
+                callback: () => {
+                    document.getElementById('extraRunsInput').setAttribute('data-type', type);
+                    const batsmanOutGroup = document.getElementById('batsmanOutGroup');
+                    if (type === 'wicket') {
+                        batsmanOutGroup.style.display = 'block';
+                    } else {
+                        batsmanOutGroup.style.display = 'none';
+                    }
+                }
+            });
+        }
+        
+        // Hide extra modal
+        function hideExtraModal() {
+            hideModal('extraModal');
+        }
+        
+        // Save extra
+        function saveExtra() {
+            const runsNum = parseInt(document.getElementById('extraRunsInput').value) || 0;
+            const type = document.getElementById('extraRunsInput').getAttribute('data-type');
+            
+            if (isNaN(runsNum) || runsNum < 1 || runsNum > 6) {
+                document.getElementById('extraError').textContent = 'Runs must be between 1 and 6';
+                return;
+            }
+            
+            let ballType = '';
+            if (type === 'noBall') ballType = 'noBallPlus';
+            else if (type === 'wide') ballType = 'widePlus';
+            else if (type === 'wicket') {
+                const batsmanOut = document.getElementById('batsmanOutSelect').value;
+                ballType = 'wicketPlus:' + batsmanOut + ':' + runsNum;
+            } else {
+                ballType = type + 'Plus:' + runsNum;
+            }
+            
+            recordBall(ballType);
+            hideExtraModal();
+        }
+
         // Initialize the app
         function initApp() {
             startMatchBtn.addEventListener('click', startMatch);
@@ -1458,6 +1765,10 @@
             changeInningsBtn.addEventListener('click', changeInnings);
             changeBowlerBtn.addEventListener('click', showBowlerModal);
             undoBtn.addEventListener('click', undoLastBall);
+            const goToScoringTabBtn = document.getElementById('goToScoringTabBtn');
+            if (goToScoringTabBtn) {
+                goToScoringTabBtn.addEventListener('click', () => setActiveMatchTab(2));
+            }
             
             // Summary buttons
             statsReviewBtn.addEventListener('click', showStatsReview);
@@ -1492,6 +1803,7 @@
                     statsView.classList.remove('hidden');
                     matchView.classList.add('hidden');
                     summaryView.classList.add('hidden');
+                    setActiveMatchTab(4);
                 });
             }
 
@@ -1538,16 +1850,16 @@
             document.getElementById('cancelBatsman').addEventListener('click', hideBatsmanModal);
             document.getElementById('saveBatsman').addEventListener('click', saveBatsman);
             
+            // Extra modal events
+            document.getElementById('cancelExtra').addEventListener('click', hideExtraModal);
+            document.getElementById('saveExtra').addEventListener('click', saveExtra);
+            
             // Batsman action buttons
             document.getElementById('changeStrikerBtn').addEventListener('click', () => {
                 showBatsmanModal('striker');
             });
             document.getElementById('changeNonStrikerBtn').addEventListener('click', () => {
                 showBatsmanModal('nonStriker');
-            });
-            document.getElementById('replaceBatsmanBtn').addEventListener('click', () => {
-                const replaceStriker = confirm('OK = Replace Striker, Cancel = Replace Non‑Striker');
-                showBatsmanModal(replaceStriker ? 'striker' : 'nonStriker', 'Replace Batsman');
             });
             
             ballButtons.forEach(button => {
@@ -1557,38 +1869,17 @@
                 });
             });
             
-            // New button event listeners
+            // New button event listeners for extra modals
             document.getElementById('wicketPlusBtn').addEventListener('click', () => {
-                const runs = prompt('Enter runs scored before wicket:');
-                const runsNum = parseInt(runs);
-                if (isNaN(runsNum) || runsNum < 1) {
-                    alert('Please enter valid runs');
-                    return;
-                }
-                // Prompt for which batsman is out
-                const strikerOut = confirm('OK = Striker out, Cancel = Non-Striker out');
-                const batsmanOut = strikerOut ? 'striker' : 'nonStriker';
-                recordBall('wicketPlus:' + batsmanOut + ':' + runsNum);
+                showExtraModal('wicket');
             });
             
             document.getElementById('widePlusBtn').addEventListener('click', () => {
-                const runs = prompt('Enter additional runs for wide:');
-                const runsNum = parseInt(runs);
-                if (isNaN(runsNum) || runsNum < 1) {
-                    alert('Please enter valid runs');
-                    return;
-                }
-                recordBall('widePlus:' + runsNum);
+                showExtraModal('wide');
             });
             
             document.getElementById('noBallPlusBtn').addEventListener('click', () => {
-                const runs = prompt('Enter additional runs for no ball:');
-                const runsNum = parseInt(runs);
-                if (isNaN(runsNum) || runsNum < 1) {
-                    alert('Please enter valid runs');
-                    return;
-                }
-                recordBall('noBallPlus:' + runsNum);
+                showExtraModal('noBall');
             });
             
             // Validate inputs on change
@@ -1598,6 +1889,9 @@
             
             // Hide target info initially
             targetInfo.classList.add('hidden');
+
+            // Initialize top-level match tabs
+            initMatchTabs();
 
             updateHeader();
 
@@ -1696,21 +1990,29 @@
             }
             
             // Update match state
-            matchState.team1.name = team1Name;
-            matchState.team2.name = team2Name;
+            matchState.team1.name = team1Name.toUpperCase();
+            matchState.team2.name = team2Name.toUpperCase();
             matchState.totalOvers = overs;
             matchState.matchEnded = false;
             matchState.winner = null;
             
             // Update UI
-            document.getElementById('matchTitle').textContent = `${team1Name} vs ${team2Name}`;
-            document.getElementById('team1Display').textContent = team1Name;
-            document.getElementById('team2Display').textContent = team2Name;
+            document.getElementById('matchTitle').textContent = `${matchState.team1.name} vs ${matchState.team2.name}`;
+            document.getElementById('team1Display').textContent = matchState.team1.name;
+            document.getElementById('team2Display').textContent = matchState.team2.name;
             updateHeader();
+            
+            // Show LiveMatch tab (Scoring/Team Info available via other tabs)
+            setActiveMatchTab(1);
+            teamInfoView.classList.remove('hidden');
             
             // Show match view, hide setup
             setupView.classList.add('hidden');
+            document.getElementById('knownIssuesSection').classList.add('hidden');
             matchView.classList.remove('hidden');
+            recordingSection.classList.remove('hidden');
+            batsmenSection.classList.remove('hidden');
+            document.getElementById('liveMatchContent').style.display = 'block';
             
             // Initialize first innings
             matchState.isFirstInnings = true;
@@ -1760,10 +2062,10 @@
             
             if (!isValid) return;
             
-            // Set names
-            matchState.striker.name = strikerName;
-            matchState.nonStriker.name = nonStrikerName;
-            matchState.currentBowler.name = bowlerName;
+            // Set names (converted to uppercase)
+            matchState.striker.name = strikerName.toUpperCase();
+            matchState.nonStriker.name = nonStrikerName.toUpperCase();
+            matchState.currentBowler.name = bowlerName.toUpperCase();
             
             // Reset batsmen stats
             matchState.striker.runs = 0;
@@ -1781,7 +2083,7 @@
             
             // Add striker
             battingTeam.players.push({
-                name: strikerName,
+                name: strikerName.toUpperCase(),
                 runs: 0,
                 balls: 0,
                 fours: 0,
@@ -1790,7 +2092,7 @@
             
             // Add non-striker
             battingTeam.players.push({
-                name: nonStrikerName,
+                name: nonStrikerName.toUpperCase(),
                 runs: 0,
                 balls: 0,
                 fours: 0,
@@ -1800,7 +2102,7 @@
             // Add bowler to bowlers list
             const bowlingTeam = matchState.battingTeam === 1 ? matchState.team2 : matchState.team1;
             bowlingTeam.bowlers.push({
-                name: bowlerName,
+                name: bowlerName.toUpperCase(),
                 overs: 0,
                 maidens: 0,
                 runs: 0,
@@ -2032,8 +2334,8 @@
         // Update target information for second innings
         function updateTargetInfo() {
             const target = matchState.team1.score + 1;
-            const remainingBalls = (matchState.totalOvers * 6) - 
-                                 (matchState.team2.overs * 6 + matchState.currentBall);
+            const ballsBowled = matchState.team2.balls || 0;
+            const remainingBalls = Math.max(0, (matchState.totalOvers * 6) - ballsBowled);
             const requiredRuns = target - matchState.team2.score;
             const runRate = remainingBalls > 0 ? (requiredRuns / remainingBalls * 6).toFixed(2) : 0;
             
@@ -2105,19 +2407,53 @@
             const nonStrikerSR = matchState.nonStriker.balls > 0 ? 
                 (matchState.nonStriker.runs / matchState.nonStriker.balls * 100).toFixed(2) : '0.00';
             
-            document.getElementById('strikerName').textContent = matchState.striker.name || 'Not set';
+            document.getElementById('strikerName').textContent = (matchState.striker.name || 'Not set') + ' *';
             document.getElementById('strikerRuns').textContent = matchState.striker.runs;
             document.getElementById('strikerBalls').textContent = matchState.striker.balls;
+            const strikerFoursEl = document.getElementById('strikerFours');
+            const strikerSixesEl = document.getElementById('strikerSixes');
+            const strikerSREl = document.getElementById('strikerSR');
+            if (strikerFoursEl) strikerFoursEl.textContent = matchState.striker.fours;
+            if (strikerSixesEl) strikerSixesEl.textContent = matchState.striker.sixes;
+            if (strikerSREl) strikerSREl.textContent = strikerSR;
             
             document.getElementById('nonStrikerName').textContent = matchState.nonStriker.name || 'Not set';
             document.getElementById('nonStrikerRuns').textContent = matchState.nonStriker.runs;
             document.getElementById('nonStrikerBalls').textContent = matchState.nonStriker.balls;
+            const nonStrikerFoursEl = document.getElementById('nonStrikerFours');
+            const nonStrikerSixesEl = document.getElementById('nonStrikerSixes');
+            const nonStrikerSREl = document.getElementById('nonStrikerSR');
+            if (nonStrikerFoursEl) nonStrikerFoursEl.textContent = matchState.nonStriker.fours;
+            if (nonStrikerSixesEl) nonStrikerSixesEl.textContent = matchState.nonStriker.sixes;
+            if (nonStrikerSREl) nonStrikerSREl.textContent = nonStrikerSR;
         }
         
         // Update bowler display
         function updateBowlerDisplay() {
-            document.getElementById('currentBowler').textContent = 
-                `${matchState.currentBowler.name} (${matchState.currentBowler.overs}-${matchState.currentBowler.maidens}-${matchState.currentBowler.runs}-${matchState.currentBowler.wickets})`;
+            const b = matchState.currentBowler;
+            const eco = b.overs > 0 ? (b.runs / b.overs).toFixed(1) : '0.0';
+            const nameWithStar = `${b.name || 'None'} *`;
+            
+            const setText = (id, value) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = value;
+            };
+            
+            // Scoring tab (batting/bowling combined table)
+            setText('currentBowlerName', nameWithStar);
+            setText('currentBowlerO', b.overs);
+            setText('currentBowlerM', b.maidens);
+            setText('currentBowlerR', b.runs);
+            setText('currentBowlerW', b.wickets);
+            setText('currentBowlerEco', eco);
+            
+            // Current over table inside ball-by-ball section
+            setText('currentOverBowlerName', nameWithStar);
+            setText('currentOverBowlerO', b.overs);
+            setText('currentOverBowlerM', b.maidens);
+            setText('currentOverBowlerR', b.runs);
+            setText('currentOverBowlerW', b.wickets);
+            setText('currentOverBowlerEco', eco);
         }
         
         // Update ball-by-ball commentary
@@ -2254,19 +2590,29 @@
             }
             
             if (bowlerName) {
-                matchState.currentBowler.name = bowlerName;
+                const nextBowlerName = bowlerName.toUpperCase();
                 
-                // Add to bowlers list if not already there
+                // Add to bowlers list if not already there, then load that bowler's figures
                 const bowlingTeam = matchState.battingTeam === 1 ? matchState.team2 : matchState.team1;
-                if (!bowlingTeam.bowlers.find(b => b.name === bowlerName)) {
+                let bowlerRecord = bowlingTeam.bowlers.find(b => b.name === nextBowlerName);
+                if (!bowlerRecord) {
                     bowlingTeam.bowlers.push({
-                        name: bowlerName,
+                        name: nextBowlerName,
                         overs: 0,
                         maidens: 0,
                         runs: 0,
                         wickets: 0
                     });
+                    bowlerRecord = bowlingTeam.bowlers.find(b => b.name === nextBowlerName);
                 }
+                
+                matchState.currentBowler = {
+                    name: bowlerRecord?.name || nextBowlerName,
+                    overs: bowlerRecord?.overs || 0,
+                    maidens: bowlerRecord?.maidens || 0,
+                    runs: bowlerRecord?.runs || 0,
+                    wickets: bowlerRecord?.wickets || 0
+                };
                 
                 updateBowlerDisplay();
                 hideBowlerModal();
@@ -2298,16 +2644,17 @@
             }
             
             if (batsmanName) {
+                const nextBatsmanName = batsmanName.toUpperCase();
                 if (position === 'striker') {
-                    matchState.striker.name = batsmanName;
+                    matchState.striker = { name: nextBatsmanName, runs: 0, balls: 0, fours: 0, sixes: 0, out: false };
                 } else {
-                    matchState.nonStriker.name = batsmanName;
+                    matchState.nonStriker = { name: nextBatsmanName, runs: 0, balls: 0, fours: 0, sixes: 0, out: false };
                 }
                 
                 // Add to players list
                 const battingTeam = matchState.battingTeam === 1 ? matchState.team1 : matchState.team2;
                 battingTeam.players.push({
-                    name: batsmanName,
+                    name: nextBatsmanName,
                     runs: 0,
                     balls: 0,
                     fours: 0,
@@ -2321,38 +2668,75 @@
         
         // Update team statistics
         function updateTeamStats() {
-            const battingTeam = matchState.battingTeam === 1 ? matchState.team1 : matchState.team2;
             const statsDiv = document.getElementById('battingStats');
+            if (!statsDiv) return;
             
-            let html = `
-                <h4>${battingTeam.name} Batting</h4>
-                <table class="team-stats">
-                    <tr>
-                        <th>Batsman</th>
-                        <th>Runs</th>
-                        <th>Balls</th>
-                        <th>4s</th>
-                        <th>6s</th>
-                        <th>SR</th>
-                    </tr>
-            `;
-            
-            battingTeam.players.forEach(player => {
-                const strikeRate = player.balls > 0 ? (player.runs / player.balls * 100).toFixed(2) : '0.00';
-                html += `
-                    <tr>
-                        <td>${player.name}</td>
-                        <td>${player.runs}</td>
-                        <td>${player.balls}</td>
-                        <td>${player.fours}</td>
-                        <td>${player.sixes}</td>
-                        <td class="strike-rate">${strikeRate}</td>
-                    </tr>
+            const renderBatting = (team) => {
+                let html = `
+                    <h4>${team.name || 'Team'} Batting</h4>
+                    <table class="team-stats">
+                        <tr>
+                            <th>Batsman</th>
+                            <th>R</th>
+                            <th>B</th>
+                            <th>4s</th>
+                            <th>6s</th>
+                            <th>SR</th>
+                        </tr>
                 `;
-            });
+                team.players.forEach(player => {
+                    const strikeRate = player.balls > 0 ? (player.runs / player.balls * 100).toFixed(2) : '0.00';
+                    html += `
+                        <tr>
+                            <td>${player.name}</td>
+                            <td>${player.runs}</td>
+                            <td>${player.balls}</td>
+                            <td>${player.fours}</td>
+                            <td>${player.sixes}</td>
+                            <td class="strike-rate">${strikeRate}</td>
+                        </tr>
+                    `;
+                });
+                html += `</table>`;
+                return html;
+            };
             
-            html += `</table>`;
-            statsDiv.innerHTML = html;
+            const renderBowling = (team) => {
+                let html = `
+                    <h4>${team.name || 'Team'} Bowling</h4>
+                    <table class="team-stats">
+                        <tr>
+                            <th>Bowler</th>
+                            <th>O</th>
+                            <th>M</th>
+                            <th>R</th>
+                            <th>W</th>
+                            <th>Eco</th>
+                        </tr>
+                `;
+                team.bowlers.forEach(bowler => {
+                    const economy = bowler.overs > 0 ? (bowler.runs / bowler.overs).toFixed(2) : '0.00';
+                    html += `
+                        <tr>
+                            <td>${bowler.name}</td>
+                            <td>${bowler.overs}</td>
+                            <td>${bowler.maidens}</td>
+                            <td>${bowler.runs}</td>
+                            <td>${bowler.wickets}</td>
+                            <td>${economy}</td>
+                        </tr>
+                    `;
+                });
+                html += `</table>`;
+                return html;
+            };
+            
+            statsDiv.innerHTML = `
+                ${renderBatting(matchState.team1)}
+                ${renderBowling(matchState.team1)}
+                ${renderBatting(matchState.team2)}
+                ${renderBowling(matchState.team2)}
+            `;
         }
         
         // Get top batsmen
@@ -2420,6 +2804,7 @@
         
         // Show stats review
         function showStatsReview() {
+            setActiveMatchTab(4);
             const statsDiv = document.getElementById('detailedStats');
             
             let html = getMatchSummaryHTML() + `
@@ -2466,65 +2851,6 @@
             `;
             
             matchState.team2.bowlers.forEach(bowler => {
-                const economy = bowler.overs > 0 ? (bowler.runs / bowler.overs).toFixed(2) : '0.00';
-                html += `
-                    <tr>
-                        <td style="width: 120px;">${bowler.name}</td>
-                        <td style="width: 40px;">${bowler.overs}</td>
-                        <td style="width: 40px;">${bowler.maidens}</td>
-                        <td style="width: 40px;">${bowler.runs}</td>
-                        <td style="width: 40px;">${bowler.wickets}</td>
-                        <td style="width: 50px;">${economy}</td>
-                    </tr>
-                `;
-            });
-            
-            html += `</table>`;
-            
-            // Second team batting
-            html += `
-                <div class="summary-title" style="margin-top:20px;">🏏 ${matchState.team2.name} Batting</div>
-                <table class="team-stats">
-                    <tr>
-                        <th style="width: 120px;">Batsman</th>
-                        <th style="width: 40px;">R</th>
-                        <th style="width: 40px;">B</th>
-                        <th style="width: 35px;">4s</th>
-                        <th style="width: 35px;">6s</th>
-                        <th style="width: 50px;">S/R</th>
-                    </tr>
-            `;
-            
-            matchState.team2.players.forEach(player => {
-                const strikeRate = player.balls > 0 ? (player.runs / player.balls * 100).toFixed(2) : '0.00';
-                html += `
-                    <tr>
-                        <td style="width: 120px;">${player.name}</td>
-                        <td style="width: 40px;">${player.runs}</td>
-                        <td style="width: 40px;">${player.balls}</td>
-                        <td style="width: 35px;">${player.fours}</td>
-                        <td style="width: 35px;">${player.sixes}</td>
-                        <td style="width: 50px;">${strikeRate}</td>
-                    </tr>
-                `;
-            });
-            
-            html += `</table>`;
-            
-            html += `
-                <div class="summary-title" style="margin-top:20px;">🎯 ${matchState.team1.name} Bowling</div>
-                <table class="team-stats">
-                    <tr>
-                        <th style="width: 120px;">Bowler</th>
-                        <th style="width: 40px;">O</th>
-                        <th style="width: 40px;">M</th>
-                        <th style="width: 40px;">R</th>
-                        <th style="width: 40px;">W</th>
-                        <th style="width: 50px;">Econ</th>
-                    </tr>
-            `;
-            
-            matchState.team1.bowlers.forEach(bowler => {
                 const economy = bowler.overs > 0 ? (bowler.runs / bowler.overs).toFixed(2) : '0.00';
                 html += `
                     <tr>
@@ -2598,6 +2924,67 @@
             };
 
             html += buildBallByBallSection('📝 Ball-by-Ball – Innings 1', matchState.team1.ballHistory);
+            
+            // Second team batting
+            html += `
+                <div class="summary-card">
+                    <div class="summary-title">🏏 ${matchState.team2.name} Batting</div>
+                    <table class="team-stats">
+                        <tr>
+                            <th style="width: 120px;">Batsman</th>
+                            <th style="width: 40px;">R</th>
+                            <th style="width: 40px;">B</th>
+                            <th style="width: 35px;">4s</th>
+                            <th style="width: 35px;">6s</th>
+                            <th style="width: 50px;">S/R</th>
+                        </tr>
+            `;
+            
+            matchState.team2.players.forEach(player => {
+                const strikeRate = player.balls > 0 ? (player.runs / player.balls * 100).toFixed(2) : '0.00';
+                html += `
+                    <tr>
+                        <td style="width: 120px;">${player.name}</td>
+                        <td style="width: 40px;">${player.runs}</td>
+                        <td style="width: 40px;">${player.balls}</td>
+                        <td style="width: 35px;">${player.fours}</td>
+                        <td style="width: 35px;">${player.sixes}</td>
+                        <td style="width: 50px;">${strikeRate}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `</table>`;
+            
+            html += `
+                <div class="summary-title" style="margin-top:20px;">🎯 ${matchState.team1.name} Bowling</div>
+                <table class="team-stats">
+                    <tr>
+                        <th style="width: 120px;">Bowler</th>
+                        <th style="width: 40px;">O</th>
+                        <th style="width: 40px;">M</th>
+                        <th style="width: 40px;">R</th>
+                        <th style="width: 40px;">W</th>
+                        <th style="width: 50px;">Econ</th>
+                    </tr>
+            `;
+            
+            matchState.team1.bowlers.forEach(bowler => {
+                const economy = bowler.overs > 0 ? (bowler.runs / bowler.overs).toFixed(2) : '0.00';
+                html += `
+                    <tr>
+                        <td style="width: 120px;">${bowler.name}</td>
+                        <td style="width: 40px;">${bowler.overs}</td>
+                        <td style="width: 40px;">${bowler.maidens}</td>
+                        <td style="width: 40px;">${bowler.runs}</td>
+                        <td style="width: 40px;">${bowler.wickets}</td>
+                        <td style="width: 50px;">${economy}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `</table>`;
+
             html += buildBallByBallSection('📝 Ball-by-Ball – Innings 2', matchState.team2.ballHistory);
             
             statsDiv.innerHTML = html;
@@ -2789,9 +3176,13 @@
                 </div>
             `;
             
-            // Show summary view, hide match view
-            matchView.classList.add('hidden');
+            // Show summary view, hide match view and recording sections
+            recordingSection.classList.add('hidden');
+            batsmenSection.classList.add('hidden');
             summaryView.classList.remove('hidden');
+
+            // Show Match Summary tab
+            setActiveMatchTab(4);
 
             updateHeader();
         }
@@ -2800,7 +3191,15 @@
         function exitMatch() {
             summaryView.classList.add('hidden');
             statsView.classList.add('hidden');
+            matchView.classList.add('hidden');
+            recordingSection.classList.add('hidden');
+            document.getElementById('batsmenSection').classList.add('hidden');
+            teamInfoView.classList.add('hidden');
             setupView.classList.remove('hidden');
+            document.getElementById('knownIssuesSection').classList.remove('hidden');
+            
+            // Show Setup tab
+            setActiveMatchTab(0);
             
             // Reset match state
             resetMatchState();
@@ -2899,7 +3298,7 @@
     </script>
 
     <footer style="text-align: center; padding: 10px; font-size: 12px; color: #666; background-color: #f9f9f9; border-top: 1px solid #ddd;">
-        ©2026 FairCricket - V0.13
+        ©2026 FairCricket - V2.0
     </footer>
 </body>
 </html>
